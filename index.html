@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
       /* Custom Pixel Scrollbar */
       ::-webkit-scrollbar {
@@ -28,9 +28,20 @@
       
       /* Base Font Settings */
       body {
-        font-family: 'VT323', monospace;
+        font-family: 'VT323', 'Noto Sans SC', sans-serif;
         image-rendering: pixelated;
         cursor: url('data:image/svg+xml;utf8,<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 2H14V4H16V6H18V12H16V14H14V16H12V18H10V22H2V2H2ZM4 4V20H8V16H10V14H12V12H14V8H12V6H10V4H4Z" fill="white"/><path d="M4 4H10V6H12V8H14V12H12V14H10V16H8V20H4V4Z" fill="black"/></svg>'), auto;
+      }
+
+      /* Custom Font Utility for Mixed Content */
+      .font-pixel-verse {
+        font-family: 'VT323', 'Noto Sans SC', sans-serif;
+      }
+
+      /* Chat Text - Force consistent font sizing/weight for mixed languages */
+      .font-chat {
+        font-family: 'Noto Sans SC', sans-serif;
+        font-weight: 500;
       }
 
       /* Pixel Art Utilities */

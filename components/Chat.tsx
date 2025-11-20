@@ -4,7 +4,7 @@ import { Theme, Message, LLMModel, LLMProvider } from '../types';
 import { PixelButton, PixelInput } from './PixelUI';
 import { streamChatResponse } from '../services/llmService';
 import { THEME_STYLES } from '../constants';
-import { Send, Mic, Paperclip, RotateCcw, Copy } from 'lucide-react';
+import { Send, Mic, Paperclip, RotateCcw, Copy, Check, Search } from 'lucide-react';
 
 interface ChatProps {
   theme: Theme;
@@ -15,7 +15,31 @@ interface ChatProps {
   onUpdateMessage: (id: string, content: string) => void;
   setMascotState: (state: 'idle' | 'thinking' | 'happy' | 'shocked') => void;
   onTriggerRainbow: () => void;
+  searchQuery?: string;
 }
+
+const CopyButton: React.FC<{ content: string }> = ({ content }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <button 
+      className={`
+        transition-all duration-200 p-1
+        ${copied ? 'text-green-500 scale-125 opacity-100' : 'opacity-70 hover:opacity-100 hover:scale-110'}
+      `} 
+      onClick={handleCopy} 
+      title={copied ? "Copied!" : "Copy"}
+    >
+      {copied ? <Check size={14}/> : <Copy size={14}/>}
+    </button>
+  );
+};
 
 export const Chat: React.FC<ChatProps> = ({ 
   theme, 
@@ -25,18 +49,28 @@ export const Chat: React.FC<ChatProps> = ({
   onSendMessage, 
   onUpdateMessage,
   setMascotState,
-  onTriggerRainbow
+  onTriggerRainbow,
+  searchQuery = ''
 }) => {
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const styles = THEME_STYLES[theme];
 
+  // Filter messages based on search query
+  const displayMessages = searchQuery.trim()
+    ? messages.filter(msg => 
+        msg.content.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        msg.role.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : messages;
+
   useEffect(() => {
-    if (scrollRef.current) {
+    // Only auto-scroll if not searching (to allow reading search results)
+    if (scrollRef.current && !searchQuery) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, searchQuery]);
 
   const handleSend = async () => {
     // EASTER EGG: Hidden Command
@@ -101,8 +135,13 @@ export const Chat: React.FC<ChatProps> = ({
              <div className="text-6xl mb-4 animate-bounce">🎮</div>
              <div className="text-xl">SELECT A MODEL TO START</div>
            </div>
+        ) : displayMessages.length === 0 ? (
+           <div className={`flex flex-col items-center justify-center h-full opacity-50 select-none ${styles.text}`}>
+             <div className="text-4xl mb-4">🔍</div>
+             <div className="text-xl">NO MESSAGES FOUND</div>
+           </div>
         ) : (
-          messages.map((msg) => (
+          displayMessages.map((msg) => (
             <div 
               key={msg.id} 
               className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -113,15 +152,19 @@ export const Chat: React.FC<ChatProps> = ({
                   ${msg.role === 'user' ? styles.primary + ' text-white' : styles.secondary + ' ' + styles.text}
                 `}
               >
-                <div className="text-xs font-bold mb-1 opacity-70 uppercase flex justify-between">
-                  <span>{msg.role}</span>
+                <div className="flex justify-between items-center mb-2 gap-2">
+                  <div className={`
+                    text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 border border-black
+                    ${msg.role === 'user' ? 'bg-white text-black' : 'bg-black text-white'}
+                    shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)]
+                  `}>
+                    {msg.role}
+                  </div>
                   {msg.role === 'assistant' && (
-                     <button className="hover:text-white" onClick={() => navigator.clipboard.writeText(msg.content)}>
-                       <Copy size={12}/>
-                     </button>
+                     <CopyButton content={msg.content} />
                   )}
                 </div>
-                <div className="whitespace-pre-wrap leading-relaxed font-mono text-sm lg:text-base">
+                <div className="whitespace-pre-wrap leading-relaxed font-chat text-sm">
                   {msg.content || <span className="animate-pulse">...</span>}
                 </div>
               </div>
@@ -145,7 +188,7 @@ export const Chat: React.FC<ChatProps> = ({
               ${isDisabled ? 'bg-gray-200 cursor-not-allowed text-gray-500' : `${styles.inputBg} ${styles.text} focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)]`}
               placeholder-current placeholder-opacity-50
               transition-all
-              font-mono relative z-50
+              font-chat relative z-50
             `}
           />
           

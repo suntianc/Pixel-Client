@@ -375,7 +375,7 @@ export const Mascot: React.FC<MascotProps> = ({ theme, state: appState, speechTe
             ${isFading ? 'opacity-0' : 'opacity-100'}
             pointer-events-none
           `}>
-             <p className="font-['VT323'] text-xl leading-5 text-black text-center break-words whitespace-pre-wrap">
+             <p className="font-pixel-verse text-xl leading-5 text-black text-center break-words whitespace-pre-wrap">
                 {displayedText}
              </p>
              {/* Pixel Tail */}

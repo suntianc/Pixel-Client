@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Theme, AppState, LLMProvider, LLMModel, Message } from './types';
 import { INITIAL_PROVIDERS, INITIAL_MODELS, THEME_STYLES } from './constants';
@@ -5,7 +6,7 @@ import { PixelButton, PixelCard, PixelSelect } from './components/PixelUI';
 import { ModelManager } from './components/ModelManager';
 import { Chat } from './components/Chat';
 import { Mascot } from './components/Mascot';
-import { Settings, Moon, Sun, Menu, Search, Star, Cpu } from 'lucide-react';
+import { Settings, Moon, Sun, Menu, Search, Star, Cpu, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const MASCOT_COMMENTS = [
   "Is that really your prompt?",
@@ -40,6 +41,7 @@ const App: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mascotState, setMascotState] = useState<'idle' | 'thinking' | 'happy' | 'shocked'>('idle');
   const [mascotComment, setMascotComment] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Easter Egg States
   const [rainbowMode, setRainbowMode] = useState(false);
@@ -231,10 +233,11 @@ const App: React.FC = () => {
                   theme={theme} 
                   variant="secondary" 
                   onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className="p-1.5 h-8 w-8"
+                  className="!p-0 w-8 h-8 flex items-center justify-center shrink-0"
+                  style={{ padding: 0 }}
                   title={sidebarOpen ? "Close Sidebar" : "Open Sidebar"}
                 >
-                    <Menu size={18} />
+                    {sidebarOpen ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
                 </PixelButton>
 
                 <span className={`font-bold ${styles.text} uppercase flex items-center gap-2 truncate`}>
@@ -244,8 +247,18 @@ const App: React.FC = () => {
              </div>
              <div className="flex gap-2">
                  <div className="relative hidden md:block">
-                     <input type="text" placeholder="Search..." className="pl-8 pr-2 py-1 border-2 border-black text-sm w-48 font-mono" />
-                     <Search className="absolute left-2 top-1.5 w-4 h-4 text-gray-500" />
+                     <input 
+                        type="text" 
+                        placeholder="Search..." 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className={`
+                            pl-8 pr-2 py-1 border-2 border-black text-sm w-48 font-chat 
+                            ${styles.inputBg} ${styles.text} placeholder-opacity-50 outline-none
+                            focus:shadow-[2px_2px_0px_rgba(0,0,0,0.2)] transition-shadow
+                        `} 
+                     />
+                     <Search className={`absolute left-2 top-1.5 w-4 h-4 opacity-50 ${styles.text}`} />
                  </div>
              </div>
          </div>
@@ -261,6 +274,7 @@ const App: React.FC = () => {
                 onUpdateMessage={handleUpdateMessage}
                 setMascotState={setMascotState}
                 onTriggerRainbow={handleRainbowTrigger}
+                searchQuery={searchQuery}
              />
          </div>
       </div>
