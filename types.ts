@@ -7,6 +7,8 @@ export enum Theme {
   CYBERPUNK = 'cyberpunk'
 }
 
+export type Language = 'en' | 'zh' | 'ja';
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
@@ -47,8 +49,15 @@ export interface LLMModel {
   dimensions?: number; // Embedding only
 }
 
+export interface AceConfig {
+  fastModelId: string;
+  reflectorModelId: string;
+  curatorModelId: string;
+}
+
 export interface AppState {
   theme: Theme;
+  language: Language;
   sidebarOpen: boolean;
   currentSessionId: string | null;
   sessions: ChatSession[];
@@ -56,4 +65,5 @@ export interface AppState {
   models: LLMModel[];
   activeModelId: string | null;
   mascotState: 'idle' | 'thinking' | 'happy' | 'shocked';
+  aceConfig: AceConfig;
 }

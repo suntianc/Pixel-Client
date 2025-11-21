@@ -1,40 +1,20 @@
 
 import React, { useState, useEffect } from 'react';
-import { Theme, AppState, LLMProvider, LLMModel, Message } from './types';
-import { INITIAL_PROVIDERS, INITIAL_MODELS, THEME_STYLES } from './constants';
-import { PixelButton, PixelCard, PixelSelect } from './components/PixelUI';
+import { Theme, LLMProvider, LLMModel, Message, AceConfig, Language } from './types';
+import { INITIAL_PROVIDERS, INITIAL_MODELS, INITIAL_ACE_CONFIG, THEME_STYLES, MASCOT_COMMENTS, TRANSLATIONS } from './constants';
+import { PixelButton, PixelSelect } from './components/PixelUI';
 import { ModelManager } from './components/ModelManager';
 import { Chat } from './components/Chat';
 import { Mascot } from './components/Mascot';
-import { Settings, Moon, Sun, Menu, Search, Star, Cpu, ChevronLeft, ChevronRight } from 'lucide-react';
-
-const MASCOT_COMMENTS = [
-  "Is that really your prompt?",
-  "I've seen better code in a fortune cookie.",
-  "Processing... judging... result: Meh.",
-  "My 8-bit brain hurts reading that.",
-  "Do you always type like that?",
-  "I'm telling the main server about this.",
-  "Can we talk about something else?",
-  "404: Intelligence not found.",
-  "Trying to look busy...",
-  "Did you try turning it off and on?",
-  "I need a GPU upgrade for this.",
-  "Beep boop. Sarcasm loaded.",
-  "Are you sure about that logic?",
-  "That's deep... for a human.",
-  "I'm just here for the pixels.",
-  "Loading witty response... 99%...",
-  "I was going to help you, but then I realized I'm just a drawing.",
-  "Wow, so many words to say so little. Truly impressive.",
-  "If I had a dollar for every syntax error, I'd buy a better CPU."
-];
+import { Settings, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const App: React.FC = () => {
   // --- State ---
-  const [theme, setTheme] = useState<Theme>(Theme.DARK);
+  const [theme, setTheme] = useState<Theme>(Theme.LIGHT);
+  const [language, setLanguage] = useState<Language>('zh');
   const [providers, setProviders] = useState<LLMProvider[]>(INITIAL_PROVIDERS);
   const [models, setModels] = useState<LLMModel[]>(INITIAL_MODELS);
+  const [aceConfig, setAceConfig] = useState<AceConfig>(INITIAL_ACE_CONFIG);
   const [activeModelId, setActiveModelId] = useState<string>(models[0]?.id || '');
   const [isModelManagerOpen, setIsModelManagerOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -54,6 +34,7 @@ const App: React.FC = () => {
   const activeModel = models.find(m => m.id === activeModelId) || null;
   const activeProvider = activeModel ? providers.find(p => p.id === activeModel.providerId) || null : null;
   const styles = THEME_STYLES[theme];
+  const t = TRANSLATIONS[language];
 
   // --- Effects ---
   // Ensure activeModelId points to a valid chat model if the current one is deleted
@@ -74,13 +55,14 @@ const App: React.FC = () => {
 
     // 30% chance to trigger a comment when messages update
     if (Math.random() < 0.3 && !mascotComment) {
-        const randomComment = MASCOT_COMMENTS[Math.floor(Math.random() * MASCOT_COMMENTS.length)];
+        const currentLangComments = MASCOT_COMMENTS[language];
+        const randomComment = currentLangComments[Math.floor(Math.random() * currentLangComments.length)];
         // Small delay to make it feel like a reaction
         setTimeout(() => {
             setMascotComment(randomComment);
         }, 1000);
     }
-  }, [messages.length]);
+  }, [messages.length, language]);
 
   // Achievement: Daily Streak Checker
   useEffect(() => {
@@ -113,17 +95,7 @@ const App: React.FC = () => {
   }, []);
 
   // --- Handlers ---
-  const toggleTheme = () => {
-    setTheme(prev => {
-        if (prev === Theme.DARK) return Theme.LIGHT;
-        if (prev === Theme.LIGHT) return Theme.FESTIVAL;
-        if (prev === Theme.FESTIVAL) return Theme.CYBERPUNK;
-        if (prev === Theme.CYBERPUNK) return isMoonlightUnlocked ? Theme.MOONLIGHT : Theme.DARK;
-        if (prev === Theme.MOONLIGHT) return Theme.DARK;
-        return Theme.DARK;
-    });
-  };
-
+  
   // Easter Egg: Rainbow Trigger
   const handleRainbowTrigger = () => {
       setRainbowMode(prev => !prev);
@@ -169,35 +141,35 @@ const App: React.FC = () => {
 
         {/* Model Selector */}
         <div className="p-4 border-b-2 border-black space-y-2">
-            <label className={`text-xs font-bold ${styles.text}`}>CURRENT CHAT MODEL</label>
+            <label className={`text-xs font-bold ${styles.text}`}>{t.currentChatModel}</label>
             <PixelSelect 
                 theme={theme} 
                 value={activeModelId} 
                 onChange={(e) => setActiveModelId(e.target.value)}
                 className="text-sm"
             >
-                {chatModels.length === 0 && <option value="">No Chat Models Available</option>}
+                {chatModels.length === 0 && <option value="">{t.noChatModels}</option>}
                 {chatModels.map(m => (
                     <option key={m.id} value={m.id}>{m.name}</option>
                 ))}
             </PixelSelect>
             <PixelButton theme={theme} variant="secondary" className="w-full text-xs" onClick={() => setIsModelManagerOpen(true)}>
-                <Settings size={12} /> CONFIG LLMs
+                <Settings size={12} /> {t.configLlms}
             </PixelButton>
         </div>
 
         {/* History List (Mock) */}
         <div className="flex-1 overflow-y-auto p-2 space-y-2">
-            <div className="text-xs opacity-50 text-center py-2">- HISTORY -</div>
+            <div className="text-xs opacity-50 text-center py-2">- {t.history} -</div>
             {[1, 2, 3].map(i => (
                 <div key={i} className={`p-2 border-2 border-black hover:bg-black/10 cursor-pointer ${styles.text} text-sm truncate`}>
-                    Session 00{i}: Project Kirby
+                    {t.session} 00{i}: Project Kirby
                 </div>
             ))}
         </div>
 
         {/* Mascot Area (Bottom of Sidebar) */}
-        <div className="p-2 flex justify-center items-end">
+        <div className="p-2 flex justify-center items-end pb-8">
             <Mascot 
                 theme={theme} 
                 state={mascotState} 
@@ -205,22 +177,6 @@ const App: React.FC = () => {
                 speechText={mascotComment}
                 onSpeechEnd={() => setMascotComment(null)}
             />
-        </div>
-        
-        {/* Bottom Controls */}
-        <div className={`p-4 border-t-4 border-black flex justify-around bg-black/5 min-h-[70px]`}>
-            <button onClick={toggleTheme} className={`p-2 rounded hover:bg-black/20 ${styles.text} flex items-center gap-2 w-full justify-center font-bold`}>
-                {theme === Theme.DARK ? <Moon size={16}/> : 
-                 theme === Theme.LIGHT ? <Sun size={16}/> : 
-                 theme === Theme.FESTIVAL ? <Star size={16} /> : 
-                 theme === Theme.CYBERPUNK ? <Cpu size={16} /> :
-                 <span className="text-cyan-300">☾</span>} 
-                {theme === Theme.DARK ? 'NIGHT' : 
-                 theme === Theme.LIGHT ? 'DAY' : 
-                 theme === Theme.FESTIVAL ? 'FEST' : 
-                 theme === Theme.CYBERPUNK ? 'CYBER' : 
-                 'MOON'}
-            </button>
         </div>
       </div>
 
@@ -242,15 +198,15 @@ const App: React.FC = () => {
                 </PixelButton>
 
                 <span className={`font-bold ${styles.text} uppercase flex items-center gap-2 truncate`}>
-                   {activeProvider?.icon} {activeModel?.name || 'NO MODEL SELECTED'}
-                   {activeModel && <span className={`text-xs px-2 py-0.5 border border-black bg-green-400 text-black`}>ONLINE</span>}
+                   {activeProvider?.icon} {activeModel?.name || t.noModelSelected}
+                   {activeModel && <span className={`text-xs px-2 py-0.5 border border-black bg-green-400 text-black`}>{t.online}</span>}
                 </span>
              </div>
              <div className="flex gap-2">
                  <div className="relative hidden md:block">
                      <input 
                         type="text" 
-                        placeholder="Search..." 
+                        placeholder={t.searchPlaceholder}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className={`
@@ -268,6 +224,7 @@ const App: React.FC = () => {
          <div className="flex-1 overflow-hidden bg-white/5 relative">
              <Chat 
                 theme={theme}
+                language={language}
                 messages={messages}
                 activeModel={activeModel}
                 provider={activeProvider}
@@ -275,6 +232,9 @@ const App: React.FC = () => {
                 onUpdateMessage={handleUpdateMessage}
                 setMascotState={setMascotState}
                 onTriggerRainbow={handleRainbowTrigger}
+                setTheme={setTheme}
+                setLanguage={setLanguage}
+                isMoonlightUnlocked={isMoonlightUnlocked}
                 searchQuery={searchQuery}
              />
          </div>
@@ -284,10 +244,13 @@ const App: React.FC = () => {
       {isModelManagerOpen && (
         <ModelManager 
             theme={theme}
+            language={language}
             providers={providers}
             models={models}
+            aceConfig={aceConfig}
             onUpdateProviders={setProviders}
             onUpdateModels={setModels}
+            onUpdateAceConfig={setAceConfig}
             onClose={() => setIsModelManagerOpen(false)}
         />
       )}

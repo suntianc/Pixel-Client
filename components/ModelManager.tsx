@@ -1,32 +1,40 @@
 
 import React, { useState } from 'react';
-import { Theme, LLMProvider, LLMModel, ModelType } from '../types';
+import { Theme, LLMProvider, LLMModel, ModelType, AceConfig, Language } from '../types';
 import { PixelButton, PixelInput, PixelCard, PixelSelect, PixelBadge } from './PixelUI';
-import { THEME_STYLES } from '../constants';
-import { Trash2, Plus, Zap, X } from 'lucide-react';
+import { THEME_STYLES, TRANSLATIONS } from '../constants';
+import { Trash2, Plus, Zap, X, Cpu, Save, AlertTriangle } from 'lucide-react';
 
 interface ModelManagerProps {
   theme: Theme;
+  language: Language;
   providers: LLMProvider[];
   models: LLMModel[];
+  aceConfig: AceConfig;
   onUpdateProviders: (providers: LLMProvider[]) => void;
   onUpdateModels: (models: LLMModel[]) => void;
+  onUpdateAceConfig: (config: AceConfig) => void;
   onClose: () => void;
 }
 
 export const ModelManager: React.FC<ModelManagerProps> = ({
   theme,
+  language,
   providers,
   models,
+  aceConfig,
   onUpdateProviders,
   onUpdateModels,
+  onUpdateAceConfig,
   onClose
 }) => {
-  const [activeTab, setActiveTab] = useState<'providers' | 'models'>('providers');
+  const [activeTab, setActiveTab] = useState<'providers' | 'models' | 'ace'>('providers');
   const [testStatus, setTestStatus] = useState<string | null>(null);
   const [successCount, setSuccessCount] = useState(0);
   const [showRocket, setShowRocket] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const styles = THEME_STYLES[theme];
+  const t = TRANSLATIONS[language];
 
   // Form State for New Provider
   const [newProvider, setNewProvider] = useState<Partial<LLMProvider>>({ type: 'custom' });
@@ -38,6 +46,10 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
     maxTokens: 2048,
     dimensions: 1536
   });
+  // Local State for ACE Config
+  const [localAceConfig, setLocalAceConfig] = useState<AceConfig>(aceConfig);
+
+  const chatModels = models.filter(m => m.type === 'chat' || !m.type);
 
   const handleAddProvider = () => {
     if (!newProvider.name || !newProvider.baseUrl) return;
@@ -111,6 +123,24 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
     }, 1500);
   };
 
+  const handleSaveAceConfig = () => {
+      // Check if it was previously configured (i.e., not the first save)
+      const isConfigured = aceConfig.fastModelId || aceConfig.reflectorModelId || aceConfig.curatorModelId;
+      
+      if (isConfigured) {
+          setShowConfirmDialog(true);
+      } else {
+          confirmSaveAceConfig();
+      }
+  };
+
+  const confirmSaveAceConfig = () => {
+      onUpdateAceConfig(localAceConfig);
+      setShowConfirmDialog(false);
+      setTestStatus('ace_saved');
+      setTimeout(() => setTestStatus(null), 2000);
+  };
+
   const getModelTypeColor = (type?: ModelType) => {
       switch(type) {
           case 'chat': return 'bg-blue-400 text-black';
@@ -168,13 +198,40 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
           </div>
       )}
 
+      {/* CONFIRMATION DIALOG OVERLAY */}
+      {showConfirmDialog && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+            <PixelCard theme={theme} className={`w-[90%] max-w-[400px] ${styles.bg} ${styles.text} flex flex-col gap-4 border-4 border-red-500 animate-float`}>
+                <div className="flex items-center gap-2 text-red-500 font-bold text-xl border-b-2 border-black pb-2">
+                    <AlertTriangle /> {t.warning}
+                </div>
+                <div className="py-2">
+                    <p className="font-bold text-lg leading-tight mb-2">
+                        {t.confirmModify}
+                    </p>
+                    <p className="text-sm opacity-80">
+                        {t.confirmModifyDesc}
+                    </p>
+                </div>
+                <div className="flex justify-end gap-4 mt-2">
+                    <PixelButton theme={theme} variant="secondary" onClick={() => setShowConfirmDialog(false)}>
+                        {t.cancel}
+                    </PixelButton>
+                    <PixelButton theme={theme} variant="danger" onClick={confirmSaveAceConfig}>
+                        {t.confirm}
+                    </PixelButton>
+                </div>
+            </PixelCard>
+        </div>
+      )}
+
       <PixelCard theme={theme} className={`w-full max-w-4xl h-[80vh] flex flex-col ${styles.bg} ${styles.text} overflow-hidden`}>
         <div className="flex justify-between items-center mb-4 border-b-4 border-black pb-2">
           <h2 className={`text-2xl font-bold flex items-center gap-2`}>
-            <Zap className="w-6 h-6" /> LLM CONFIGURATION
+            <Zap className="w-6 h-6" /> {t.llmConfig}
           </h2>
           <PixelButton theme={theme} onClick={onClose} variant="secondary">
-            <X className="w-4 h-4" /> CLOSE
+            <X className="w-4 h-4" /> {t.close}
           </PixelButton>
         </div>
 
@@ -185,149 +242,220 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
             onClick={() => setActiveTab('providers')} 
             variant={activeTab === 'providers' ? 'primary' : 'secondary'}
           >
-            PROVIDERS
+            {t.providers}
           </PixelButton>
           <PixelButton 
             theme={theme} 
             onClick={() => setActiveTab('models')} 
             variant={activeTab === 'models' ? 'primary' : 'secondary'}
           >
-            MODELS
+            {t.models}
+          </PixelButton>
+          <PixelButton 
+            theme={theme} 
+            onClick={() => setActiveTab('ace')} 
+            variant={activeTab === 'ace' ? 'primary' : 'secondary'}
+          >
+            {t.aceAgent}
           </PixelButton>
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-y-auto flex gap-4">
-          
-          {/* List Column */}
-          <div className="w-1/3 border-r-4 border-black pr-4 flex flex-col overflow-y-auto">
-            {activeTab === 'providers' ? (
-              providers.map(p => (
-                <div key={p.id} className="border-2 border-black p-2 mb-2 hover:bg-black/5 flex justify-between items-center group">
-                  <div>
-                    <div className="font-bold">{p.icon} {p.name}</div>
-                    <div className="text-xs opacity-70">{p.baseUrl}</div>
-                  </div>
-                  <button onClick={() => handleDeleteProvider(p.id)} className="opacity-0 group-hover:opacity-100 text-red-500">
-                    <Trash2 size={16} />
-                  </button>
+        {activeTab === 'ace' ? (
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center">
+             <div className="max-w-2xl w-full space-y-8">
+                <div className="border-b-2 border-black pb-2 mb-4">
+                    <h3 className="text-xl font-bold flex items-center gap-2">
+                        <Cpu size={24} /> {t.aceConfigTitle}
+                    </h3>
+                    <p className="opacity-70 text-sm mt-1">{t.aceConfigDesc}</p>
                 </div>
-              ))
-            ) : (
-              <div className="space-y-4">
-                 {groupedModels.chat.length > 0 && (
-                    <div>
-                        <div className="flex items-center gap-2 mb-2">
-                             <PixelBadge theme={theme} color={getModelTypeColor('chat')}>CHAT</PixelBadge>
-                             <div className="h-1 bg-black/20 flex-1"></div>
-                        </div>
-                        {groupedModels.chat.map(renderModelItem)}
-                    </div>
-                 )}
-                 
-                 {groupedModels.embedding.length > 0 && (
-                    <div>
-                        <div className="flex items-center gap-2 mb-2 mt-4">
-                             <PixelBadge theme={theme} color={getModelTypeColor('embedding')}>EMBED</PixelBadge>
-                             <div className="h-1 bg-black/20 flex-1"></div>
-                        </div>
-                        {groupedModels.embedding.map(renderModelItem)}
-                    </div>
-                 )}
 
-                 {groupedModels.rerank.length > 0 && (
-                    <div>
-                        <div className="flex items-center gap-2 mb-2 mt-4">
-                             <PixelBadge theme={theme} color={getModelTypeColor('rerank')}>RERANK</PixelBadge>
-                             <div className="h-1 bg-black/20 flex-1"></div>
-                        </div>
-                        {groupedModels.rerank.map(renderModelItem)}
+                <div className="space-y-6">
+                    <div className="bg-white/5 p-4 border-2 border-black">
+                        <PixelSelect 
+                            theme={theme} 
+                            label={t.fastModel} 
+                            value={localAceConfig.fastModelId} 
+                            onChange={(e) => setLocalAceConfig({...localAceConfig, fastModelId: e.target.value})}
+                        >
+                            <option value="">{t.selectModel}</option>
+                            {chatModels.map(m => <option key={m.id} value={m.id}>{m.name} ({m.modelId})</option>)}
+                        </PixelSelect>
+                        <div className="text-xs opacity-50 mt-1">{t.fastModelDesc}</div>
                     </div>
-                 )}
 
-                 {models.length === 0 && (
-                     <div className="text-center opacity-50 py-10">No models configured.</div>
-                 )}
-              </div>
-            )}
+                    <div className="bg-white/5 p-4 border-2 border-black">
+                        <PixelSelect 
+                            theme={theme} 
+                            label={t.reflectorModel} 
+                            value={localAceConfig.reflectorModelId} 
+                            onChange={(e) => setLocalAceConfig({...localAceConfig, reflectorModelId: e.target.value})}
+                        >
+                            <option value="">{t.selectModel}</option>
+                            {chatModels.map(m => <option key={m.id} value={m.id}>{m.name} ({m.modelId})</option>)}
+                        </PixelSelect>
+                        <div className="text-xs opacity-50 mt-1">{t.reflectorModelDesc}</div>
+                    </div>
+
+                    <div className="bg-white/5 p-4 border-2 border-black">
+                        <PixelSelect 
+                            theme={theme} 
+                            label={t.curatorModel} 
+                            value={localAceConfig.curatorModelId} 
+                            onChange={(e) => setLocalAceConfig({...localAceConfig, curatorModelId: e.target.value})}
+                        >
+                            <option value="">{t.selectModel}</option>
+                            {chatModels.map(m => <option key={m.id} value={m.id}>{m.name} ({m.modelId})</option>)}
+                        </PixelSelect>
+                        <div className="text-xs opacity-50 mt-1">{t.curatorModelDesc}</div>
+                    </div>
+                </div>
+                
+                <div className="mt-8 p-4 border-2 border-dashed border-black/30 text-center opacity-50">
+                    {t.aceNote}
+                </div>
+
+                <div className="flex justify-end gap-4 items-center border-t-4 border-black pt-4">
+                    {testStatus === 'ace_saved' && <span className="text-green-500 font-bold animate-pulse">{t.configSaved}</span>}
+                    <PixelButton theme={theme} onClick={handleSaveAceConfig}>
+                         <Save className="w-4 h-4" /> {t.saveConfig}
+                    </PixelButton>
+                </div>
+             </div>
           </div>
-
-          {/* Form Column */}
-          <div className="w-2/3 pl-2 overflow-y-auto">
-             {activeTab === 'providers' ? (
-               <div className="space-y-4">
-                 <h3 className="text-xl font-bold border-b-2 border-black mb-2">ADD PROVIDER</h3>
-                 <div className="grid grid-cols-2 gap-4">
-                    <PixelInput theme={theme} label="Name" placeholder="e.g. Local DeepSeek" value={newProvider.name || ''} onChange={e => setNewProvider({...newProvider, name: e.target.value})} />
-                    <PixelSelect theme={theme} label="Type" value={newProvider.type} onChange={e => setNewProvider({...newProvider, type: e.target.value as any})}>
-                        <option value="openai">OpenAI Compatible</option>
-                        <option value="anthropic">Anthropic</option>
-                        <option value="deepseek">DeepSeek</option>
-                        <option value="custom">Custom</option>
-                    </PixelSelect>
-                 </div>
-                 <PixelInput theme={theme} label="API Base URL" placeholder="https://..." value={newProvider.baseUrl || ''} onChange={e => setNewProvider({...newProvider, baseUrl: e.target.value})} />
-                 <PixelInput theme={theme} label="API Key" type="password" placeholder="sk-..." value={newProvider.apiKey || ''} onChange={e => setNewProvider({...newProvider, apiKey: e.target.value})} />
-                 
-                 <div className="flex gap-2 mt-4">
-                   <PixelButton theme={theme} onClick={runTest}>
-                     {testStatus === 'loading' ? 'TESTING...' : testStatus === 'success' ? 'SUCCESS!' : 'TEST CONNECT'}
-                   </PixelButton>
-                   <PixelButton theme={theme} onClick={handleAddProvider} disabled={!newProvider.name || !newProvider.baseUrl}>
-                     <Plus className="w-4 h-4" /> SAVE PROVIDER
-                   </PixelButton>
-                 </div>
-                 {testStatus === 'success' && <div className="text-green-600 font-bold animate-bounce">Connection Verified! ★</div>}
-                 {successCount > 0 && successCount < 10 && <div className="text-xs opacity-50 mt-1">Consecutive Tests: {successCount}/10</div>}
-               </div>
-             ) : (
-               <div className="space-y-4">
-                 <h3 className="text-xl font-bold border-b-2 border-black mb-2">
-                     ADD MODEL <span className="text-sm font-normal opacity-50 ml-2">({newModel.type?.toUpperCase()})</span>
-                 </h3>
-                 
-                 <div className="grid grid-cols-2 gap-4">
-                    <PixelSelect theme={theme} label="Provider" value={newModel.providerId || ''} onChange={e => setNewModel({...newModel, providerId: e.target.value})}>
-                        <option value="">Select Provider...</option>
-                        {providers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                    </PixelSelect>
-                    <PixelSelect theme={theme} label="Model Type" value={newModel.type || 'chat'} onChange={e => setNewModel({...newModel, type: e.target.value as ModelType})}>
-                        <option value="chat">Chat Completion</option>
-                        <option value="embedding">Embedding</option>
-                        <option value="rerank">Rerank</option>
-                    </PixelSelect>
-                 </div>
-
-                 <div className="grid grid-cols-2 gap-4">
-                    <PixelInput theme={theme} label="Display Name" placeholder="e.g. GPT-4 Turbo" value={newModel.name || ''} onChange={e => setNewModel({...newModel, name: e.target.value})} />
-                    <PixelInput theme={theme} label="Model ID (API)" placeholder="e.g. gpt-4-1106-preview" value={newModel.modelId || ''} onChange={e => setNewModel({...newModel, modelId: e.target.value})} />
-                 </div>
-
-                 {newModel.type === 'chat' && (
-                    <div className="grid grid-cols-3 gap-4">
-                        <PixelInput theme={theme} label="Context (Tokens)" type="number" value={newModel.contextLength || ''} onChange={e => setNewModel({...newModel, contextLength: parseInt(e.target.value)})} />
-                        <PixelInput theme={theme} label="Max Output" type="number" value={newModel.maxTokens || ''} onChange={e => setNewModel({...newModel, maxTokens: parseInt(e.target.value)})} />
-                        <PixelInput theme={theme} label="Temp (0-1)" type="number" step="0.1" value={newModel.temperature} onChange={e => setNewModel({...newModel, temperature: parseFloat(e.target.value)})} />
+        ) : (
+          <div className="flex-1 overflow-y-auto flex gap-4">
+            {/* List Column */}
+            <div className="w-1/3 border-r-4 border-black pr-4 flex flex-col overflow-y-auto">
+              {activeTab === 'providers' ? (
+                providers.map(p => (
+                  <div key={p.id} className="border-2 border-black p-2 mb-2 hover:bg-black/5 flex justify-between items-center group">
+                    <div>
+                      <div className="font-bold">{p.icon} {p.name}</div>
+                      <div className="text-xs opacity-70">{p.baseUrl}</div>
                     </div>
-                 )}
-
-                 {newModel.type === 'embedding' && (
-                     <div className="grid grid-cols-2 gap-4">
-                         <PixelInput theme={theme} label="Dimensions" type="number" value={newModel.dimensions || ''} onChange={e => setNewModel({...newModel, dimensions: parseInt(e.target.value)})} placeholder="1536" />
-                     </div>
-                 )}
-
-                 {/* Rerank models have no additional configuration inputs */}
-                 
-                 <div className="flex gap-2 mt-4">
-                   <PixelButton theme={theme} onClick={handleAddModel} disabled={!newModel.providerId || !newModel.name}>
-                     <Plus className="w-4 h-4" /> ADD MODEL
-                   </PixelButton>
+                    <button onClick={() => handleDeleteProvider(p.id)} className="opacity-0 group-hover:opacity-100 text-red-500">
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <div className="space-y-4">
+                   {groupedModels.chat.length > 0 && (
+                      <div>
+                          <div className="flex items-center gap-2 mb-2">
+                               <PixelBadge theme={theme} color={getModelTypeColor('chat')}>CHAT</PixelBadge>
+                               <div className="h-1 bg-black/20 flex-1"></div>
+                          </div>
+                          {groupedModels.chat.map(renderModelItem)}
+                      </div>
+                   )}
+                   
+                   {groupedModels.embedding.length > 0 && (
+                      <div>
+                          <div className="flex items-center gap-2 mb-2 mt-4">
+                               <PixelBadge theme={theme} color={getModelTypeColor('embedding')}>EMBED</PixelBadge>
+                               <div className="h-1 bg-black/20 flex-1"></div>
+                          </div>
+                          {groupedModels.embedding.map(renderModelItem)}
+                      </div>
+                   )}
+  
+                   {groupedModels.rerank.length > 0 && (
+                      <div>
+                          <div className="flex items-center gap-2 mb-2 mt-4">
+                               <PixelBadge theme={theme} color={getModelTypeColor('rerank')}>RERANK</PixelBadge>
+                               <div className="h-1 bg-black/20 flex-1"></div>
+                          </div>
+                          {groupedModels.rerank.map(renderModelItem)}
+                      </div>
+                   )}
+  
+                   {models.length === 0 && (
+                       <div className="text-center opacity-50 py-10">{t.noModelsConfigured}</div>
+                   )}
+                </div>
+              )}
+            </div>
+  
+            {/* Form Column */}
+            <div className="w-2/3 pl-2 overflow-y-auto">
+               {activeTab === 'providers' ? (
+                 <div className="space-y-4">
+                   <h3 className="text-xl font-bold border-b-2 border-black mb-2">{t.addProvider}</h3>
+                   <div className="grid grid-cols-2 gap-4">
+                      <PixelInput theme={theme} label={t.name} placeholder="e.g. Local DeepSeek" value={newProvider.name || ''} onChange={e => setNewProvider({...newProvider, name: e.target.value})} />
+                      <PixelSelect theme={theme} label={t.type} value={newProvider.type} onChange={e => setNewProvider({...newProvider, type: e.target.value as any})}>
+                          <option value="openai">OpenAI Compatible</option>
+                          <option value="anthropic">Anthropic</option>
+                          <option value="deepseek">DeepSeek</option>
+                          <option value="custom">Custom</option>
+                      </PixelSelect>
+                   </div>
+                   <PixelInput theme={theme} label={t.apiBaseUrl} placeholder="https://..." value={newProvider.baseUrl || ''} onChange={e => setNewProvider({...newProvider, baseUrl: e.target.value})} />
+                   <PixelInput theme={theme} label={t.apiKey} type="password" placeholder="sk-..." value={newProvider.apiKey || ''} onChange={e => setNewProvider({...newProvider, apiKey: e.target.value})} />
+                   
+                   <div className="flex gap-2 mt-4">
+                     <PixelButton theme={theme} onClick={handleAddProvider} disabled={!newProvider.name || !newProvider.baseUrl}>
+                       <Plus className="w-4 h-4" /> {t.saveProvider}
+                     </PixelButton>
+                   </div>
                  </div>
-               </div>
-             )}
+               ) : (
+                 <div className="space-y-4">
+                   <h3 className="text-xl font-bold border-b-2 border-black mb-2">
+                       {t.addModel} <span className="text-sm font-normal opacity-50 ml-2">({newModel.type?.toUpperCase()})</span>
+                   </h3>
+                   
+                   <div className="grid grid-cols-2 gap-4">
+                      <PixelSelect theme={theme} label={t.providers} value={newModel.providerId || ''} onChange={e => setNewModel({...newModel, providerId: e.target.value})}>
+                          <option value="">{t.selectProvider}</option>
+                          {providers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                      </PixelSelect>
+                      <PixelSelect theme={theme} label={t.type} value={newModel.type || 'chat'} onChange={e => setNewModel({...newModel, type: e.target.value as ModelType})}>
+                          <option value="chat">Chat Completion</option>
+                          <option value="embedding">Embedding</option>
+                          <option value="rerank">Rerank</option>
+                      </PixelSelect>
+                   </div>
+  
+                   <div className="grid grid-cols-2 gap-4">
+                      <PixelInput theme={theme} label={t.displayName} placeholder="e.g. GPT-4 Turbo" value={newModel.name || ''} onChange={e => setNewModel({...newModel, name: e.target.value})} />
+                      <PixelInput theme={theme} label={t.modelId} placeholder="e.g. gpt-4-1106-preview" value={newModel.modelId || ''} onChange={e => setNewModel({...newModel, modelId: e.target.value})} />
+                   </div>
+  
+                   {newModel.type === 'chat' && (
+                      <div className="grid grid-cols-3 gap-4">
+                          <PixelInput theme={theme} label={t.context} type="number" value={newModel.contextLength || ''} onChange={e => setNewModel({...newModel, contextLength: parseInt(e.target.value)})} />
+                          <PixelInput theme={theme} label={t.maxOutput} type="number" value={newModel.maxTokens || ''} onChange={e => setNewModel({...newModel, maxTokens: parseInt(e.target.value)})} />
+                          <PixelInput theme={theme} label={t.temp} type="number" step="0.1" value={newModel.temperature} onChange={e => setNewModel({...newModel, temperature: parseFloat(e.target.value)})} />
+                      </div>
+                   )}
+  
+                   {newModel.type === 'embedding' && (
+                       <div className="grid grid-cols-2 gap-4">
+                           <PixelInput theme={theme} label={t.dimensions} type="number" value={newModel.dimensions || ''} onChange={e => setNewModel({...newModel, dimensions: parseInt(e.target.value)})} placeholder="1536" />
+                       </div>
+                   )}
+  
+                   {/* Rerank models have no additional configuration inputs */}
+                   
+                   <div className="flex gap-2 mt-4">
+                     <PixelButton theme={theme} onClick={runTest} disabled={!newModel.providerId || !newModel.modelId}>
+                       {testStatus === 'loading' ? t.testing : testStatus === 'success' ? t.success : t.testModel}
+                     </PixelButton>
+                     <PixelButton theme={theme} onClick={handleAddModel} disabled={!newModel.providerId || !newModel.name}>
+                       <Plus className="w-4 h-4" /> {t.addModel}
+                     </PixelButton>
+                   </div>
+                   {testStatus === 'success' && <div className="text-green-600 font-bold animate-bounce">{t.modelVerified} ★</div>}
+                   {successCount > 0 && successCount < 10 && <div className="text-xs opacity-50 mt-1">{t.consecutiveTests}: {successCount}/10</div>}
+                 </div>
+               )}
+            </div>
           </div>
-        </div>
+        )}
       </PixelCard>
     </div>
   );

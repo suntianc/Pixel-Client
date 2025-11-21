@@ -1,13 +1,14 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Theme, Message, LLMModel, LLMProvider } from '../types';
-import { PixelButton, PixelInput } from './PixelUI';
+import { Theme, Message, LLMModel, LLMProvider, Language } from '../types';
+import { PixelButton, PixelBadge } from './PixelUI';
 import { streamChatResponse } from '../services/llmService';
-import { THEME_STYLES } from '../constants';
-import { Send, Mic, Paperclip, RotateCcw, Copy, Check, Search } from 'lucide-react';
+import { THEME_STYLES, TRANSLATIONS } from '../constants';
+import { Send, Copy, Check, Moon, Sun, Star, Cpu, Globe, Palette } from 'lucide-react';
 
 interface ChatProps {
   theme: Theme;
+  language: Language;
   messages: Message[];
   activeModel: LLMModel | null;
   provider: LLMProvider | null;
@@ -15,6 +16,9 @@ interface ChatProps {
   onUpdateMessage: (id: string, content: string) => void;
   setMascotState: (state: 'idle' | 'thinking' | 'happy' | 'shocked') => void;
   onTriggerRainbow: () => void;
+  setTheme: (theme: Theme) => void;
+  setLanguage: (lang: Language) => void;
+  isMoonlightUnlocked: boolean;
   searchQuery?: string;
 }
 
@@ -43,6 +47,7 @@ const CopyButton: React.FC<{ content: string }> = ({ content }) => {
 
 export const Chat: React.FC<ChatProps> = ({ 
   theme, 
+  language,
   messages, 
   activeModel, 
   provider,
@@ -50,12 +55,25 @@ export const Chat: React.FC<ChatProps> = ({
   onUpdateMessage,
   setMascotState,
   onTriggerRainbow,
+  setTheme,
+  setLanguage,
+  isMoonlightUnlocked,
   searchQuery = ''
 }) => {
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
+  const [showThemeMenu, setShowThemeMenu] = useState(false);
+  const [showLangMenu, setShowLangMenu] = useState(false);
+  
   const scrollRef = useRef<HTMLDivElement>(null);
   const styles = THEME_STYLES[theme];
+  const t = TRANSLATIONS[language];
+
+  // Close menus on click outside (simple implementation via backdrop)
+  const closeMenus = () => {
+      setShowThemeMenu(false);
+      setShowLangMenu(false);
+  };
 
   // Filter messages based on search query
   const displayMessages = searchQuery.trim()
@@ -126,19 +144,48 @@ export const Chat: React.FC<ChatProps> = ({
 
   const isDisabled = (!activeModel || isStreaming) && input.trim() !== '/upup downdown left right';
 
+  const ThemeOption = ({ targetTheme, icon, label }: { targetTheme: Theme, icon: React.ReactNode, label: string }) => (
+      <button 
+        onClick={() => { setTheme(targetTheme); setShowThemeMenu(false); }}
+        className={`
+            flex items-center gap-2 w-full text-left p-2 hover:bg-black/10 text-sm font-bold
+            ${theme === targetTheme ? 'bg-black/5 border-l-4 border-black' : ''}
+        `}
+      >
+         {icon} {label}
+      </button>
+  );
+
+  const LangOption = ({ targetLang, label }: { targetLang: Language, label: string }) => (
+      <button 
+        onClick={() => { setLanguage(targetLang); setShowLangMenu(false); }}
+        className={`
+            flex items-center gap-2 w-full text-left p-2 hover:bg-black/10 text-sm font-bold
+            ${language === targetLang ? 'bg-black/5 border-l-4 border-black' : ''}
+        `}
+      >
+         <span className="w-4 text-center">{targetLang.toUpperCase()}</span> {label}
+      </button>
+  );
+
   return (
     <div className="flex flex-col h-full relative z-10">
+      {/* Backdrop for menus */}
+      {(showThemeMenu || showLangMenu) && (
+          <div className="fixed inset-0 z-[60] cursor-default" onClick={closeMenus}></div>
+      )}
+
       {/* Chat Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6 relative z-10" ref={scrollRef}>
         {messages.length === 0 ? (
            <div className={`flex flex-col items-center justify-center h-full opacity-50 select-none ${styles.text}`}>
              <div className="text-6xl mb-4 animate-bounce">🎮</div>
-             <div className="text-xl">SELECT A MODEL TO START</div>
+             <div className="text-xl">{t.selectModelStart}</div>
            </div>
         ) : displayMessages.length === 0 ? (
            <div className={`flex flex-col items-center justify-center h-full opacity-50 select-none ${styles.text}`}>
              <div className="text-4xl mb-4">🔍</div>
-             <div className="text-xl">NO MESSAGES FOUND</div>
+             <div className="text-xl">{t.noMessagesFound}</div>
            </div>
         ) : (
           displayMessages.map((msg) => (
@@ -174,7 +221,7 @@ export const Chat: React.FC<ChatProps> = ({
       </div>
 
       {/* Input Area */}
-      <div className={`p-4 border-t-4 border-black ${styles.secondary} relative z-50`}>
+      <div className={`p-4 border-t-4 border-black ${styles.secondary} relative z-[70]`}>
         <div className="relative">
           <textarea
             value={input}
@@ -193,28 +240,79 @@ export const Chat: React.FC<ChatProps> = ({
           />
           
           <div className="flex justify-between mt-2 items-center relative z-50">
-             <div className="flex gap-2">
-                <PixelButton theme={theme} variant="secondary" className="p-2 h-8 w-8" title="Upload File" disabled={isDisabled}>
-                   <Paperclip size={16} />
-                </PixelButton>
-                <PixelButton theme={theme} variant="secondary" className="p-2 h-8 w-8" title="Voice Input" disabled={isDisabled}>
-                   <Mic size={16} />
-                </PixelButton>
+             <div className="flex gap-2 items-center">
+                {/* Theme Switcher */}
+                <div className="relative">
+                    {showThemeMenu && (
+                        <div className={`
+                            absolute bottom-full left-0 mb-2 w-40 border-2 border-black 
+                            ${styles.secondary} ${styles.text} shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
+                            flex flex-col z-[70]
+                        `}>
+                             <ThemeOption targetTheme={Theme.LIGHT} icon={<Sun size={14}/>} label={t.themeDay} />
+                             <ThemeOption targetTheme={Theme.DARK} icon={<Moon size={14}/>} label={t.themeNight} />
+                             <ThemeOption targetTheme={Theme.FESTIVAL} icon={<Star size={14}/>} label={t.themeFest} />
+                             <ThemeOption targetTheme={Theme.CYBERPUNK} icon={<Cpu size={14}/>} label={t.themeCyber} />
+                             {isMoonlightUnlocked && (
+                                 <ThemeOption targetTheme={Theme.MOONLIGHT} icon={<span className="text-cyan-300">☾</span>} label={t.themeMoon} />
+                             )}
+                        </div>
+                    )}
+                    <PixelButton 
+                        theme={theme} 
+                        variant="secondary" 
+                        className="w-9 h-9 !p-0 flex items-center justify-center" 
+                        title="Change Theme"
+                        onClick={() => {
+                            if (!showThemeMenu) setShowLangMenu(false);
+                            setShowThemeMenu(!showThemeMenu);
+                        }}
+                    >
+                        <Palette size={20} />
+                    </PixelButton>
+                </div>
+
+                {/* Language Switcher */}
+                <div className="relative">
+                    {showLangMenu && (
+                        <div className={`
+                            absolute bottom-full left-0 mb-2 w-32 border-2 border-black 
+                            ${styles.secondary} ${styles.text} shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
+                            flex flex-col z-[70]
+                        `}>
+                             <LangOption targetLang="en" label="English" />
+                             <LangOption targetLang="zh" label="中文" />
+                             <LangOption targetLang="ja" label="日本語" />
+                        </div>
+                    )}
+                    <PixelButton 
+                        theme={theme} 
+                        variant="secondary" 
+                        className="w-9 h-9 !p-0 flex items-center justify-center" 
+                        title="Change Language"
+                        onClick={() => {
+                             if (!showLangMenu) setShowThemeMenu(false);
+                             setShowLangMenu(!showLangMenu);
+                        }}
+                    >
+                        <Globe size={20} />
+                    </PixelButton>
+                </div>
              </div>
              
              <div className="flex gap-2">
                 {isStreaming && (
                    <div className={`flex items-center mr-4 ${styles.text}`}>
-                     <span className="animate-spin mr-2">★</span> GENERATING
+                     <span className="animate-spin mr-2">★</span> {t.generating}
                    </div>
                 )}
                 <PixelButton 
                     theme={theme} 
                     onClick={handleSend} 
                     disabled={(!input.trim() && !input.startsWith('/')) || isDisabled}
-                    className="w-32"
+                    className="w-32 h-9"
                 >
-                    {isStreaming ? 'STOP' : 'SEND'} <Send size={16} />
+                    {isStreaming ? t.stop : t.send} <Send size={16} />
                 </PixelButton>
              </div>
           </div>
