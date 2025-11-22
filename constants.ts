@@ -189,7 +189,11 @@ export const TRANSLATIONS = {
     themeFest: "FEST",
     themeCyber: "CYBER",
     themeMoon: "MOON",
-    session: "Session"
+    session: "Session",
+    deleteSessionTitle: "DELETE SESSION?",
+    deleteSessionConfirm: "Are you sure?",
+    deleteSessionDesc: "This conversation history will be lost forever in the void.",
+    deleteAction: "DELETE"
   },
   zh: {
     currentChatModel: "当前对话模型",
@@ -251,7 +255,11 @@ export const TRANSLATIONS = {
     themeFest: "庆典",
     themeCyber: "赛博",
     themeMoon: "月光",
-    session: "会话"
+    session: "会话",
+    deleteSessionTitle: "删除会话？",
+    deleteSessionConfirm: "确认删除？",
+    deleteSessionDesc: "此会话历史记录将永久丢失。",
+    deleteAction: "删除"
   },
   ja: {
     currentChatModel: "現在のチャットモデル",
@@ -313,6 +321,10 @@ export const TRANSLATIONS = {
     themeFest: "祭",
     themeCyber: "電脳",
     themeMoon: "月光",
-    session: "セッション"
+    session: "セッション",
+    deleteSessionTitle: "セッション削除？",
+    deleteSessionConfirm: "本当に削除しますか？",
+    deleteSessionDesc: "この会話履歴は永久に失われます。",
+    deleteAction: "削除"
   }
 };

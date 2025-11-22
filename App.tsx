@@ -83,18 +83,11 @@ const App: React.FC = () => {
     const loadHistory = async () => {
         if (!activeSessionId) return;
         
-        // Find local session to see if we already have messages (optional optimization, 
-        // but for now we fetch fresh to sync with backend)
-        const history = await ApiClient.getSessionHistory(activeSessionId);
+        // Use the new getSessionMessages endpoint
+        const fetchedMessages = await ApiClient.getSessionMessages(activeSessionId);
         
-        if (history && history.messages) {
-            setMessages(history.messages);
-        } else {
-            // If API doesn't return messages (yet), clear the view or keep local
-            // For this implementation, we assume if we switched, we want to load. 
-            // If empty, we start blank.
-            setMessages([]); 
-        }
+        // If API returns messages, set them. Otherwise start fresh.
+        setMessages(fetchedMessages || []);
     };
     loadHistory();
   }, [activeSessionId]);
@@ -328,22 +321,22 @@ const App: React.FC = () => {
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm">
             <PixelCard theme={theme} className={`w-[90%] max-w-[350px] ${styles.bg} ${styles.text} flex flex-col gap-4 border-4 border-red-500 animate-float`}>
                 <div className="flex items-center gap-2 text-red-500 font-bold text-xl border-b-2 border-black pb-2">
-                    <Trash2 /> DELETE SESSION?
+                    <Trash2 /> {t.deleteSessionTitle}
                 </div>
                 <div className="py-2">
                     <p className="font-bold text-lg leading-tight mb-2">
-                        Are you sure?
+                        {t.deleteSessionConfirm}
                     </p>
                     <p className="text-sm opacity-80">
-                        This conversation history will be lost forever in the void.
+                        {t.deleteSessionDesc}
                     </p>
                 </div>
                 <div className="flex justify-end gap-4 mt-2">
                     <PixelButton theme={theme} variant="secondary" onClick={() => setShowDeleteDialog(false)}>
-                        CANCEL
+                        {t.cancel}
                     </PixelButton>
                     <PixelButton theme={theme} variant="danger" onClick={confirmDeleteSession}>
-                        DELETE
+                        {t.deleteAction}
                     </PixelButton>
                 </div>
             </PixelCard>
@@ -482,30 +475,3 @@ const App: React.FC = () => {
                 setTheme={setTheme}
                 setLanguage={setLanguage}
                 isMoonlightUnlocked={isMoonlightUnlocked}
-                searchQuery={searchQuery}
-                onStop={handleStopGeneration}
-                isStreaming={isStreaming}
-             />
-         </div>
-      </div>
-
-      {/* Global Modals */}
-      {isModelManagerOpen && (
-        <ModelManager 
-            theme={theme}
-            language={language}
-            providers={providers}
-            models={models}
-            aceConfig={aceConfig}
-            onUpdateProviders={setProviders}
-            onUpdateModels={setModels}
-            onUpdateAceConfig={setAceConfig}
-            onClose={() => setIsModelManagerOpen(false)}
-        />
-      )}
-
-    </div>
-  );
-};
-
-export default App;

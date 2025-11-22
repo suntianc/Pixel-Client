@@ -1,6 +1,6 @@
 
 import { API_BASE_URL, API_KEY } from '../constants';
-import { LLMModel, LLMProvider, ModelType, ApiSession, SessionHistory } from '../types';
+import { LLMModel, LLMProvider, ModelType, ApiSession, SessionHistory, Message } from '../types';
 
 const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout = 5000) => {
     const controller = new AbortController();
@@ -53,6 +53,15 @@ interface ApiModel {
   };
 }
 
+interface ApiMessage {
+    id: number;
+    conversation_id: string;
+    role: 'user' | 'assistant' | 'system';
+    content: string;
+    created_at: number;
+    metadata: string | null;
+}
+
 // --- Adapters ---
 
 const adaptProvider = (apiProvider: ApiProvider): LLMProvider => ({
@@ -74,6 +83,14 @@ const adaptModel = (apiModel: ApiModel): LLMModel => ({
   maxTokens: apiModel.modelConfig?.maxTokens,
   temperature: apiModel.modelConfig?.temperature,
   dimensions: apiModel.modelConfig?.dimensions
+});
+
+const adaptMessage = (apiMsg: ApiMessage): Message => ({
+    id: apiMsg.id.toString(),
+    role: apiMsg.role,
+    content: apiMsg.content,
+    timestamp: apiMsg.created_at,
+    modelId: undefined // Not provided by this endpoint currently
 });
 
 // --- API Calls ---
@@ -260,6 +277,19 @@ export const ApiClient = {
         return data?.data || null;
       } catch {
           return null;
+      }
+  },
+
+  getSessionMessages: async (conversationId: string, limit = 100, offset = 0): Promise<Message[]> => {
+      try {
+          const res = await fetchWithTimeout(`${API_BASE_URL}/v1/chat/sessions/${conversationId}/messages?limit=${limit}&offset=${offset}`, { headers: getHeaders() });
+          if (!res.ok) return [];
+          const data = await res.json();
+          const apiMessages: ApiMessage[] = data?.data?.messages || [];
+          return apiMessages.map(adaptMessage);
+      } catch (e) {
+          console.warn("API Error (Messages):", e);
+          return [];
       }
   },
 
