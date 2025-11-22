@@ -66,6 +66,7 @@ export interface ApiSession {
 
 export interface SessionHistory {
   sessionState: ApiSession;
+  messages?: Message[]; // Added to support history retrieval
   telemetry: any[];
   directives: any[];
 }

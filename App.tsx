@@ -2,11 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { Theme, LLMProvider, LLMModel, Message, AceConfig, Language, ChatSession } from './types';
 import { INITIAL_ACE_CONFIG, THEME_STYLES, MASCOT_COMMENTS, TRANSLATIONS } from './constants';
-import { PixelButton, PixelSelect } from './components/PixelUI';
+import { PixelButton, PixelSelect, PixelCard } from './components/PixelUI';
 import { ModelManager } from './components/ModelManager';
 import { Chat } from './components/Chat';
 import { Mascot } from './components/Mascot';
-import { Settings, Search, ChevronLeft, ChevronRight, Trash2, RefreshCcw, AlertCircle } from 'lucide-react';
+import { Settings, Search, ChevronLeft, ChevronRight, Trash2, RefreshCcw, AlertCircle, AlertTriangle } from 'lucide-react';
 import { ApiClient } from './services/apiClient';
 import { streamChatResponse } from './services/llmService';
 
@@ -30,6 +30,10 @@ const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
+
+  // Delete Modal State
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mascotState, setMascotState] = useState<'idle' | 'thinking' | 'happy' | 'shocked'>('idle');
@@ -74,6 +78,27 @@ const App: React.FC = () => {
     initData();
   }, []);
 
+  // Fetch history when session changes
+  useEffect(() => {
+    const loadHistory = async () => {
+        if (!activeSessionId) return;
+        
+        // Find local session to see if we already have messages (optional optimization, 
+        // but for now we fetch fresh to sync with backend)
+        const history = await ApiClient.getSessionHistory(activeSessionId);
+        
+        if (history && history.messages) {
+            setMessages(history.messages);
+        } else {
+            // If API doesn't return messages (yet), clear the view or keep local
+            // For this implementation, we assume if we switched, we want to load. 
+            // If empty, we start blank.
+            setMessages([]); 
+        }
+    };
+    loadHistory();
+  }, [activeSessionId]);
+
   const refreshSessions = async () => {
       const apiSessions = await ApiClient.getActiveSessions();
       // Map API sessions to ChatSession type
@@ -81,7 +106,7 @@ const App: React.FC = () => {
           id: s.sessionId,
           title: `Session ${s.sessionId.substring(0,6)}`,
           lastUpdated: s.lastActivityAt,
-          messages: [] // Messages are not returned by session list API
+          messages: [] // Messages are loaded on select
       }));
       setSessions(mappedSessions);
       if (mappedSessions.length > 0 && !activeSessionId) {
@@ -196,16 +221,28 @@ const App: React.FC = () => {
     setMessages(prev => prev.map(msg => msg.id === id ? { ...msg, content } : msg));
   };
 
-  const handleDeleteSession = async (e: React.MouseEvent, id: string) => {
+  const handleDeleteSessionRequest = (e: React.MouseEvent, id: string) => {
       e.stopPropagation();
-      if (confirm("Delete this session?")) {
-          await ApiClient.deleteSession(id);
-          const newSessions = sessions.filter(s => s.id !== id);
+      setSessionToDelete(id);
+      setShowDeleteDialog(true);
+  };
+
+  const confirmDeleteSession = async () => {
+      if (!sessionToDelete) return;
+      
+      try {
+          await ApiClient.deleteSession(sessionToDelete);
+          const newSessions = sessions.filter(s => s.id !== sessionToDelete);
           setSessions(newSessions);
-          if (activeSessionId === id) {
+          if (activeSessionId === sessionToDelete) {
               if (newSessions.length > 0) setActiveSessionId(newSessions[0].id);
               else createNewSession();
           }
+      } catch (e) {
+          console.error("Delete failed", e);
+      } finally {
+          setShowDeleteDialog(false);
+          setSessionToDelete(null);
       }
   };
 
@@ -224,11 +261,11 @@ const App: React.FC = () => {
   // Main Chat Handler
   const handleSendMessage = async (msg: Message) => {
      if (msg.role === 'assistant') {
-         // This is the placeholder from Chat component, just add it
          setMessages(prev => [...prev, msg]);
          return; 
      }
 
+     // 1. Add User Message
      setMessages(prev => [...prev, msg]);
      setIsStreaming(true);
      setMascotState('thinking');
@@ -239,9 +276,16 @@ const App: React.FC = () => {
      }
 
      const botMsgId = (Date.now() + 1).toString();
-     // Create placeholder (this logic matches Chat.tsx expectation roughly, 
-     // but effectively Chat.tsx drives this via onSendMessage calls)
      
+     // 2. Add Empty Assistant Message Immediately (Loading State)
+     const botMsg: Message = {
+         id: botMsgId,
+         role: 'assistant',
+         content: '', // Empty content triggers "Thinking" UI in Chat.tsx
+         timestamp: Date.now() + 1
+     };
+     setMessages(prev => [...prev, botMsg]);
+
      let fullContent = '';
 
      await streamChatResponse(
@@ -279,6 +323,33 @@ const App: React.FC = () => {
   return (
     <div className={`flex h-screen w-screen overflow-hidden ${styles.bg} ${styles.text} transition-colors duration-500 scanline-effect ${rainbowMode ? 'rainbow-mode' : ''}`}>
       
+      {/* DELETE CONFIRMATION DIALOG */}
+      {showDeleteDialog && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+            <PixelCard theme={theme} className={`w-[90%] max-w-[350px] ${styles.bg} ${styles.text} flex flex-col gap-4 border-4 border-red-500 animate-float`}>
+                <div className="flex items-center gap-2 text-red-500 font-bold text-xl border-b-2 border-black pb-2">
+                    <Trash2 /> DELETE SESSION?
+                </div>
+                <div className="py-2">
+                    <p className="font-bold text-lg leading-tight mb-2">
+                        Are you sure?
+                    </p>
+                    <p className="text-sm opacity-80">
+                        This conversation history will be lost forever in the void.
+                    </p>
+                </div>
+                <div className="flex justify-end gap-4 mt-2">
+                    <PixelButton theme={theme} variant="secondary" onClick={() => setShowDeleteDialog(false)}>
+                        CANCEL
+                    </PixelButton>
+                    <PixelButton theme={theme} variant="danger" onClick={confirmDeleteSession}>
+                        DELETE
+                    </PixelButton>
+                </div>
+            </PixelCard>
+        </div>
+      )}
+
       {/* Sidebar */}
       <div className={`
         ${sidebarOpen ? 'w-64 border-r-4' : 'w-0 border-r-0'} 
@@ -321,7 +392,7 @@ const App: React.FC = () => {
             {sessions.map(session => (
                 <div 
                     key={session.id} 
-                    onClick={() => { setActiveSessionId(session.id); setMessages([]); }} // Clearing messages as we can't fetch history yet
+                    onClick={() => setActiveSessionId(session.id)}
                     className={`
                         p-2 border-2 border-black cursor-pointer text-sm truncate flex justify-between items-center group
                         ${activeSessionId === session.id ? 'bg-black/10' : 'hover:bg-black/5'}
@@ -330,7 +401,7 @@ const App: React.FC = () => {
                 >
                     <span className="truncate w-32">{session.title}</span>
                     <button 
-                        onClick={(e) => handleDeleteSession(e, session.id)}
+                        onClick={(e) => handleDeleteSessionRequest(e, session.id)}
                         className="opacity-0 group-hover:opacity-100 text-red-500 hover:bg-red-100 rounded p-1"
                     >
                         <Trash2 size={12} />

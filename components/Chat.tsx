@@ -4,7 +4,7 @@ import { Theme, Message, LLMModel, LLMProvider, Language } from '../types';
 import { PixelButton, PixelBadge } from './PixelUI';
 import { streamChatResponse } from '../services/llmService';
 import { THEME_STYLES, TRANSLATIONS } from '../constants';
-import { Send, Copy, Check, Moon, Sun, Star, Cpu, Globe, Palette } from 'lucide-react';
+import { Send, Copy, Check, Moon, Sun, Star, Cpu, Globe, Palette, Loader2 } from 'lucide-react';
 
 interface ChatProps {
   theme: Theme;
@@ -182,7 +182,7 @@ export const Chat: React.FC<ChatProps> = ({
              <div className="text-xl">{t.noMessagesFound}</div>
            </div>
         ) : (
-          displayMessages.map((msg) => (
+          displayMessages.map((msg, index) => (
             <div 
               key={msg.id} 
               className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -201,12 +201,24 @@ export const Chat: React.FC<ChatProps> = ({
                   `}>
                     {msg.role}
                   </div>
-                  {msg.role === 'assistant' && (
+                  {msg.role === 'assistant' && msg.content && (
                      <CopyButton content={msg.content} />
                   )}
                 </div>
                 <div className="whitespace-pre-wrap leading-relaxed font-chat text-sm">
-                  {msg.content || <span className="animate-pulse">...</span>}
+                  {msg.content ? (
+                      msg.content
+                  ) : (
+                      // Loading state for empty content (typically last message during generation)
+                      <div className="flex items-center gap-2 py-2 opacity-70">
+                          <Loader2 size={16} className="animate-spin" />
+                          <span className="font-pixel-verse animate-pulse">Thinking...</span>
+                      </div>
+                  )}
+                  {/* Cursor effect if it's the last message and streaming and has content */}
+                  {isStreaming && index === messages.length - 1 && msg.content && (
+                      <span className="inline-block w-2 h-4 bg-current ml-1 animate-cursor align-middle"></span>
+                  )}
                 </div>
               </div>
             </div>
