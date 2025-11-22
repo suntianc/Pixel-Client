@@ -6,12 +6,15 @@ import { PixelButton, PixelSelect } from './components/PixelUI';
 import { ModelManager } from './components/ModelManager';
 import { Chat } from './components/Chat';
 import { Mascot } from './components/Mascot';
-import { Settings, Search, ChevronLeft, ChevronRight, Trash2, RefreshCcw } from 'lucide-react';
+import { Settings, Search, ChevronLeft, ChevronRight, Trash2, RefreshCcw, AlertCircle } from 'lucide-react';
 import { ApiClient } from './services/apiClient';
 import { streamChatResponse } from './services/llmService';
 
 const App: React.FC = () => {
   // --- State ---
+  const [isLoading, setIsLoading] = useState(true);
+  const [isBackendOffline, setIsBackendOffline] = useState(false);
+  
   const [theme, setTheme] = useState<Theme>(Theme.LIGHT);
   const [language, setLanguage] = useState<Language>('zh');
   const [providers, setProviders] = useState<LLMProvider[]>([]);
@@ -37,19 +40,36 @@ const App: React.FC = () => {
   const [rainbowMode, setRainbowMode] = useState(false);
   const [isMoonlightUnlocked, setIsMoonlightUnlocked] = useState(false);
 
+  const styles = THEME_STYLES[theme];
+  const t = TRANSLATIONS[language];
+
   // --- Effects ---
   // Initial Data Fetch
   useEffect(() => {
     const initData = async () => {
-        const fetchedProviders = await ApiClient.getProviders();
-        setProviders(fetchedProviders);
-        const fetchedModels = await ApiClient.getAllModels();
-        setModels(fetchedModels);
-        
-        if (fetchedModels.length > 0) {
-            setActiveModelId(fetchedModels[0].id);
+        try {
+            const fetchedProviders = await ApiClient.getProviders();
+            setProviders(fetchedProviders);
+            const fetchedModels = await ApiClient.getAllModels();
+            setModels(fetchedModels);
+            
+            // Check if backend seems offline (empty arrays often indicate connection failure in this setup)
+            if (fetchedProviders.length === 0 && fetchedModels.length === 0) {
+                 // We don't set isBackendOffline=true strictly here as it might just be a fresh install
+                 // But we can log a warning
+                 console.warn("No providers found. Backend might be offline or unconfigured.");
+            }
+
+            if (fetchedModels.length > 0) {
+                setActiveModelId(fetchedModels[0].id);
+            }
+            await refreshSessions();
+        } catch (e) {
+            console.error("Initialization failed:", e);
+            setIsBackendOffline(true);
+        } finally {
+            setIsLoading(false);
         }
-        refreshSessions();
     };
     initData();
   }, []);
@@ -90,8 +110,6 @@ const App: React.FC = () => {
 
   const activeModel = models.find(m => m.id === activeModelId) || null;
   const activeProvider = activeModel ? providers.find(p => p.id === activeModel.providerId) || null : null;
-  const styles = THEME_STYLES[theme];
-  const t = TRANSLATIONS[language];
 
   // Ensure activeModelId points to a valid chat model if the current one is deleted
   useEffect(() => {
@@ -247,6 +265,17 @@ const App: React.FC = () => {
      refreshSessions(); // Update timestamps
   };
 
+  // --- Loading Screen ---
+  if (isLoading) {
+      return (
+          <div className={`fixed inset-0 z-50 flex items-center justify-center ${styles.bg} ${styles.text} flex-col gap-4`}>
+               <Mascot theme={theme} state="thinking" className="w-32 h-32 animate-bounce" />
+               <div className="text-2xl font-bold animate-pulse tracking-widest">INITIALIZING PIXELVERSE...</div>
+               <div className="text-sm opacity-50 font-mono">Establishing Neural Link...</div>
+          </div>
+      );
+  }
+
   return (
     <div className={`flex h-screen w-screen overflow-hidden ${styles.bg} ${styles.text} transition-colors duration-500 scanline-effect ${rainbowMode ? 'rainbow-mode' : ''}`}>
       
@@ -345,6 +374,11 @@ const App: React.FC = () => {
                 </span>
              </div>
              <div className="flex gap-2">
+                 {isBackendOffline && (
+                    <div className="flex items-center gap-2 text-xs font-bold text-red-500 border-2 border-red-500 px-2 py-1 animate-pulse bg-red-100">
+                        <AlertCircle size={14} /> API OFFLINE
+                    </div>
+                 )}
                  <div className="relative hidden md:block">
                      <input 
                         type="text" 

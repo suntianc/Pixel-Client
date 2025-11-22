@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Theme, LLMProvider, LLMModel, ModelType, AceConfig, Language } from '../types';
 import { PixelButton, PixelInput, PixelCard, PixelSelect, PixelBadge } from './PixelUI';
 import { THEME_STYLES, TRANSLATIONS } from '../constants';
-import { Trash2, Plus, Zap, X, Cpu, Save, AlertTriangle } from 'lucide-react';
+import { Trash2, Plus, Zap, X, Cpu, Save, AlertTriangle, Edit } from 'lucide-react';
 import { ApiClient } from '../services/apiClient';
 
 interface ModelManagerProps {
@@ -37,9 +37,13 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
   const styles = THEME_STYLES[theme];
   const t = TRANSLATIONS[language];
 
-  // Form State for New Provider
+  // Edit Mode States
+  const [editingProviderId, setEditingProviderId] = useState<string | null>(null);
+  const [editingModelId, setEditingModelId] = useState<string | null>(null);
+
+  // Form State for Provider
   const [newProvider, setNewProvider] = useState<Partial<LLMProvider>>({ type: 'custom' });
-  // Form State for New Model
+  // Form State for Model
   const [newModel, setNewModel] = useState<Partial<LLMModel>>({ 
     type: 'chat',
     contextLength: 4096, 
@@ -64,26 +68,69 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
 
   const chatModels = models.filter(m => m.type === 'chat' || (m.type as any) === 'nlp' || !m.type);
 
-  const handleAddProvider = async () => {
+  const handleEditProvider = (p: LLMProvider) => {
+      setEditingProviderId(p.id);
+      // When editing, clear apiKey so user doesn't accidentally save masked key. 
+      // If they want to update it, they type a new one.
+      setNewProvider({ ...p, apiKey: '' }); 
+  };
+
+  const handleCancelProvider = () => {
+      setEditingProviderId(null);
+      setNewProvider({ type: 'custom', name: '', baseUrl: '', apiKey: '' });
+  };
+
+  const handleSaveProvider = async () => {
     if (!newProvider.name || !newProvider.baseUrl) return;
     try {
-        const created = await ApiClient.createProvider(newProvider);
-        onUpdateProviders([...providers, created]);
+        if (editingProviderId) {
+            const updated = await ApiClient.updateProvider(editingProviderId, newProvider);
+            onUpdateProviders(providers.map(p => p.id === editingProviderId ? updated : p));
+            setEditingProviderId(null);
+        } else {
+            const created = await ApiClient.createProvider(newProvider);
+            onUpdateProviders([...providers, created]);
+        }
         setNewProvider({ type: 'custom', name: '', baseUrl: '', apiKey: '' });
     } catch (e) {
-        alert("Failed to create provider. Ensure backend is running.");
+        alert("Failed to save provider. Ensure backend is running.");
     }
   };
 
-  const handleAddModel = async () => {
+  const handleEditModel = (m: LLMModel) => {
+      setEditingModelId(m.id);
+      // Ensure types align (API 'nlp' -> UI 'chat' logic handled via select value mostly)
+      // Map 'nlp' to 'chat' for the dropdown if needed, though the select handles ModelType
+      let type = m.type;
+      if ((type as any) === 'nlp') type = 'chat';
+      
+      setNewModel({ ...m, type }); 
+  };
+
+  const handleCancelModel = () => {
+      setEditingModelId(null);
+      setNewModel({ 
+        type: 'chat',
+        name: '', 
+        modelId: '',
+        contextLength: 4096,
+        temperature: 0.7,
+        maxTokens: 2048,
+        dimensions: 1536,
+        providerId: ''
+      });
+  };
+
+  const handleSaveModel = async () => {
     if (!newModel.name || !newModel.modelId || !newModel.providerId) return;
     const type = newModel.type as ModelType || 'chat';
     
-    const modelPayload: Partial<LLMModel> = {
+    // Prepare payload basics
+    const modelPayload: any = {
       providerId: newModel.providerId,
       name: newModel.name,
       modelId: newModel.modelId,
-      type: type === 'chat' ? 'nlp' as any : type, // API uses 'nlp', UI uses 'chat'
+      type: type === 'chat' ? 'nlp' : type,
       contextLength: newModel.contextLength,
       maxTokens: newModel.maxTokens,
       temperature: newModel.temperature,
@@ -91,9 +138,14 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
     };
 
     try {
-        const created = await ApiClient.createModel(modelPayload);
-        // Normalize type back to UI standard if needed, though map handles it
-        onUpdateModels([...models, created]);
+        if (editingModelId) {
+            const updated = await ApiClient.updateModel({ ...modelPayload, id: editingModelId });
+            onUpdateModels(models.map(m => m.id === editingModelId ? updated : m));
+            setEditingModelId(null);
+        } else {
+            const created = await ApiClient.createModel(modelPayload);
+            onUpdateModels([...models, created]);
+        }
         
         setNewModel({ 
             ...newModel, 
@@ -101,7 +153,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
             modelId: '' 
         });
     } catch (e) {
-        alert("Failed to create model.");
+        alert("Failed to save model.");
     }
   };
 
@@ -111,6 +163,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
         await ApiClient.deleteProvider(id);
         onUpdateProviders(providers.filter(p => p.id !== id));
         onUpdateModels(models.filter(m => m.providerId !== id));
+        if (editingProviderId === id) handleCancelProvider();
     } catch (e) {
         alert("Error deleting provider");
     }
@@ -121,6 +174,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
       try {
           await ApiClient.deleteModel(model.providerId, model.id);
           onUpdateModels(models.filter(x => x.id !== model.id));
+          if (editingModelId === model.id) handleCancelModel();
       } catch (e) {
           alert("Error deleting model");
       }
@@ -179,8 +233,9 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
 
   const renderModelItem = (m: LLMModel) => {
     const parent = providers.find(p => p.id === m.providerId);
+    const isEditing = editingModelId === m.id;
     return (
-      <div key={m.id} className="border-2 border-black p-2 mb-2 hover:bg-black/5 flex justify-between items-center group bg-white/50">
+      <div key={m.id} className={`border-2 border-black p-2 mb-2 flex justify-between items-center group bg-white/50 ${isEditing ? 'bg-blue-100/50 border-blue-500' : 'hover:bg-black/5'}`}>
         <div>
           <div className="font-bold flex items-center gap-2">
               {m.name}
@@ -191,9 +246,14 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
              {m.type === 'embedding' && m.dimensions && `DIM: ${m.dimensions}`}
           </div>
         </div>
-        <button onClick={() => handleDeleteModel(m)} className="opacity-0 group-hover:opacity-100 text-red-500">
-          <Trash2 size={16} />
-        </button>
+        <div className="flex items-center">
+            <button onClick={() => handleEditModel(m)} className="opacity-0 group-hover:opacity-100 text-blue-500 mr-2 hover:scale-110 transition-transform" title="Edit">
+              <Edit size={16} />
+            </button>
+            <button onClick={() => handleDeleteModel(m)} className="opacity-0 group-hover:opacity-100 text-red-500 hover:scale-110 transition-transform" title="Delete">
+              <Trash2 size={16} />
+            </button>
+        </div>
       </div>
     );
   };
@@ -349,14 +409,19 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
             <div className="w-1/3 border-r-4 border-black pr-4 flex flex-col overflow-y-auto">
               {activeTab === 'providers' ? (
                 providers.map(p => (
-                  <div key={p.id} className="border-2 border-black p-2 mb-2 hover:bg-black/5 flex justify-between items-center group">
+                  <div key={p.id} className={`border-2 border-black p-2 mb-2 flex justify-between items-center group ${editingProviderId === p.id ? 'bg-blue-100/50 border-blue-500' : 'hover:bg-black/5'}`}>
                     <div>
                       <div className="font-bold">{p.icon} {p.name}</div>
                       <div className="text-xs opacity-70">{p.baseUrl}</div>
                     </div>
-                    <button onClick={() => handleDeleteProvider(p.id)} className="opacity-0 group-hover:opacity-100 text-red-500">
-                      <Trash2 size={16} />
-                    </button>
+                    <div className="flex items-center">
+                        <button onClick={() => handleEditProvider(p)} className="opacity-0 group-hover:opacity-100 text-blue-500 mr-2 hover:scale-110 transition-transform">
+                          <Edit size={16} />
+                        </button>
+                        <button onClick={() => handleDeleteProvider(p.id)} className="opacity-0 group-hover:opacity-100 text-red-500 hover:scale-110 transition-transform">
+                          <Trash2 size={16} />
+                        </button>
+                    </div>
                   </div>
                 ))
               ) : (
@@ -402,10 +467,17 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
             <div className="w-2/3 pl-2 overflow-y-auto">
                {activeTab === 'providers' ? (
                  <div className="space-y-4">
-                   <h3 className="text-xl font-bold border-b-2 border-black mb-2">{t.addProvider}</h3>
+                   <div className="flex justify-between items-center border-b-2 border-black mb-2">
+                       <h3 className="text-xl font-bold">
+                           {editingProviderId ? "EDIT PROVIDER" : t.addProvider}
+                       </h3>
+                       {editingProviderId && (
+                           <button onClick={handleCancelProvider} className="text-xs text-red-500 font-bold hover:underline">{t.cancel}</button>
+                       )}
+                   </div>
                    <div className="grid grid-cols-2 gap-4">
                       <PixelInput theme={theme} label={t.name} placeholder="e.g. Local DeepSeek" value={newProvider.name || ''} onChange={e => setNewProvider({...newProvider, name: e.target.value})} />
-                      <PixelSelect theme={theme} label={t.type} value={newProvider.type} onChange={e => setNewProvider({...newProvider, type: e.target.value as any})}>
+                      <PixelSelect theme={theme} label={t.type} value={newProvider.type} onChange={e => setNewProvider({...newProvider, type: e.target.value as any})} disabled={!!editingProviderId}>
                           <option value="openai">OpenAI Compatible</option>
                           <option value="anthropic">Anthropic</option>
                           <option value="deepseek">DeepSeek</option>
@@ -413,26 +485,31 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
                       </PixelSelect>
                    </div>
                    <PixelInput theme={theme} label={t.apiBaseUrl} placeholder="https://..." value={newProvider.baseUrl || ''} onChange={e => setNewProvider({...newProvider, baseUrl: e.target.value})} />
-                   <PixelInput theme={theme} label={t.apiKey} type="password" placeholder="sk-..." value={newProvider.apiKey || ''} onChange={e => setNewProvider({...newProvider, apiKey: e.target.value})} />
+                   <PixelInput theme={theme} label={t.apiKey} type="password" placeholder={editingProviderId ? "(Leave empty to keep existing)" : "sk-..."} value={newProvider.apiKey || ''} onChange={e => setNewProvider({...newProvider, apiKey: e.target.value})} />
                    
                    <div className="flex gap-2 mt-4">
-                     <PixelButton theme={theme} onClick={handleAddProvider} disabled={!newProvider.name || !newProvider.baseUrl}>
-                       <Plus className="w-4 h-4" /> {t.saveProvider}
+                     <PixelButton theme={theme} onClick={handleSaveProvider} disabled={!newProvider.name || !newProvider.baseUrl}>
+                       {editingProviderId ? <Save className="w-4 h-4" /> : <Plus className="w-4 h-4" />} {editingProviderId ? "UPDATE PROVIDER" : t.saveProvider}
                      </PixelButton>
                    </div>
                  </div>
                ) : (
                  <div className="space-y-4">
-                   <h3 className="text-xl font-bold border-b-2 border-black mb-2">
-                       {t.addModel} <span className="text-sm font-normal opacity-50 ml-2">({newModel.type?.toUpperCase()})</span>
-                   </h3>
+                   <div className="flex justify-between items-center border-b-2 border-black mb-2">
+                        <h3 className="text-xl font-bold">
+                           {editingModelId ? "EDIT MODEL" : t.addModel} <span className="text-sm font-normal opacity-50 ml-2">({newModel.type?.toUpperCase()})</span>
+                        </h3>
+                        {editingModelId && (
+                           <button onClick={handleCancelModel} className="text-xs text-red-500 font-bold hover:underline">{t.cancel}</button>
+                       )}
+                   </div>
                    
                    <div className="grid grid-cols-2 gap-4">
                       <PixelSelect theme={theme} label={t.providers} value={newModel.providerId || ''} onChange={e => setNewModel({...newModel, providerId: e.target.value})}>
                           <option value="">{t.selectProvider}</option>
                           {providers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                       </PixelSelect>
-                      <PixelSelect theme={theme} label={t.type} value={newModel.type || 'chat'} onChange={e => setNewModel({...newModel, type: e.target.value as ModelType})}>
+                      <PixelSelect theme={theme} label={t.type} value={newModel.type || 'chat'} onChange={e => setNewModel({...newModel, type: e.target.value as ModelType})} disabled={!!editingModelId}>
                           <option value="chat">Chat Completion</option>
                           <option value="embedding">Embedding</option>
                           <option value="rerank">Rerank</option>
@@ -464,8 +541,8 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
                      <PixelButton theme={theme} onClick={runTest} disabled={!newModel.providerId || !newModel.modelId}>
                        {testStatus === 'loading' ? t.testing : testStatus === 'success' ? t.success : t.testModel}
                      </PixelButton>
-                     <PixelButton theme={theme} onClick={handleAddModel} disabled={!newModel.providerId || !newModel.name}>
-                       <Plus className="w-4 h-4" /> {t.addModel}
+                     <PixelButton theme={theme} onClick={handleSaveModel} disabled={!newModel.providerId || !newModel.name}>
+                       {editingModelId ? <Save className="w-4 h-4" /> : <Plus className="w-4 h-4" />} {editingModelId ? "UPDATE MODEL" : t.addModel}
                      </PixelButton>
                    </div>
                    {testStatus === 'success' && <div className="text-green-600 font-bold animate-bounce">{t.modelVerified} ★</div>}

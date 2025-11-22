@@ -2,6 +2,22 @@
 import { API_BASE_URL, API_KEY } from '../constants';
 import { LLMModel, LLMProvider, ModelType, ApiSession, SessionHistory } from '../types';
 
+const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout = 5000) => {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeout);
+    try {
+        const response = await fetch(url, {
+            ...options,
+            signal: controller.signal
+        });
+        clearTimeout(id);
+        return response;
+    } catch (error) {
+        clearTimeout(id);
+        throw error;
+    }
+};
+
 const getHeaders = () => ({
   'Content-Type': 'application/json',
   'Authorization': `Bearer ${API_KEY}`
@@ -43,7 +59,7 @@ const adaptProvider = (apiProvider: ApiProvider): LLMProvider => ({
   id: apiProvider.id.toString(),
   name: apiProvider.name,
   type: apiProvider.provider as any,
-  baseUrl: apiProvider.baseConfig.baseURL,
+  baseUrl: apiProvider.baseConfig?.baseURL || '',
   apiKey: '', // Key is masked by API
   icon: '🔧'
 });
@@ -66,12 +82,13 @@ export const ApiClient = {
   // Providers
   getProviders: async (): Promise<LLMProvider[]> => {
     try {
-        const res = await fetch(`${API_BASE_URL}/api/llm/providers`, { headers: getHeaders() });
+        const res = await fetchWithTimeout(`${API_BASE_URL}/api/llm/providers`, { headers: getHeaders() });
         if (!res.ok) throw new Error('Failed to fetch providers');
         const data = await res.json();
+        if (!data || !data.providers) return [];
         return data.providers.map(adaptProvider);
     } catch (e) {
-        console.error(e);
+        console.warn("API Error (Providers):", e);
         return []; // Fallback/Mock for UI safety
     }
   },
@@ -85,7 +102,7 @@ export const ApiClient = {
             apiKey: provider.apiKey
         }
     };
-    const res = await fetch(`${API_BASE_URL}/api/llm/providers`, {
+    const res = await fetchWithTimeout(`${API_BASE_URL}/api/llm/providers`, {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify(payload)
@@ -95,8 +112,27 @@ export const ApiClient = {
     return adaptProvider(data.provider);
   },
 
+  updateProvider: async (id: string, provider: Partial<LLMProvider>): Promise<LLMProvider> => {
+    const payload = {
+        name: provider.name,
+        baseConfig: {
+            baseURL: provider.baseUrl,
+            // Only send apiKey if it's provided (non-empty), otherwise keep existing on server
+            ...(provider.apiKey ? { apiKey: provider.apiKey } : {})
+        }
+    };
+    const res = await fetchWithTimeout(`${API_BASE_URL}/api/llm/providers/${id}`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error('Failed to update provider');
+    const data = await res.json();
+    return adaptProvider(data.provider);
+  },
+
   deleteProvider: async (id: string): Promise<void> => {
-    await fetch(`${API_BASE_URL}/api/llm/providers/${id}`, {
+    await fetchWithTimeout(`${API_BASE_URL}/api/llm/providers/${id}`, {
         method: 'DELETE',
         headers: getHeaders()
     });
@@ -105,9 +141,10 @@ export const ApiClient = {
   // Models
   getModels: async (providerId: string): Promise<LLMModel[]> => {
     try {
-        const res = await fetch(`${API_BASE_URL}/api/llm/providers/${providerId}/models`, { headers: getHeaders() });
+        const res = await fetchWithTimeout(`${API_BASE_URL}/api/llm/providers/${providerId}/models`, { headers: getHeaders() });
         if (!res.ok) throw new Error('Failed to fetch models');
         const data = await res.json();
+        if (!data || !data.models) return [];
         return data.models.map(adaptModel);
     } catch (e) {
         console.error(e);
@@ -117,23 +154,24 @@ export const ApiClient = {
   
   getAllModels: async (): Promise<LLMModel[]> => {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/llm/models`, { headers: getHeaders() });
+        const res = await fetchWithTimeout(`${API_BASE_URL}/api/llm/models`, { headers: getHeaders() });
         if (!res.ok) throw new Error('Failed to fetch all models');
         const data = await res.json();
         
-        // The list endpoint returns a slightly different structure or simplified list, 
-        // assuming standard mapping:
-        return data.models.map((m: any) => ({
+        return (data.models || []).map((m: any) => ({
             id: m.id.toString(),
             providerId: m.providerId.toString(),
             name: m.modelName,
             modelId: m.modelKey,
             type: m.modelType as ModelType,
-            // Basic endpoint might not return config details, but we map what we can
-            contextLength: 4096 
+            // Map config if available flattened, otherwise defaults
+            contextLength: m.modelConfig?.contextLength || 4096,
+            maxTokens: m.modelConfig?.maxTokens,
+            temperature: m.modelConfig?.temperature,
+            dimensions: m.modelConfig?.dimensions
         }));
       } catch (e) {
-          console.error(e);
+          console.warn("API Error (Models):", e);
           return [];
       }
   },
@@ -152,7 +190,7 @@ export const ApiClient = {
          enabled: true
      };
      
-     const res = await fetch(`${API_BASE_URL}/api/llm/providers/${model.providerId}/models`, {
+     const res = await fetchWithTimeout(`${API_BASE_URL}/api/llm/providers/${model.providerId}/models`, {
          method: 'POST',
          headers: getHeaders(),
          body: JSON.stringify(payload)
@@ -162,8 +200,31 @@ export const ApiClient = {
      return adaptModel(data.model);
   },
 
+  updateModel: async (model: Partial<LLMModel> & { id: string, providerId: string }): Promise<LLMModel> => {
+     const payload = {
+         modelName: model.name,
+         // Note: modelType is typically not editable after creation in this API design
+         enabled: true,
+         modelConfig: {
+             contextLength: model.contextLength,
+             maxTokens: model.maxTokens,
+             temperature: model.temperature,
+             dimensions: model.dimensions
+         }
+     };
+     
+     const res = await fetchWithTimeout(`${API_BASE_URL}/api/llm/providers/${model.providerId}/models/${model.id}`, {
+         method: 'PUT',
+         headers: getHeaders(),
+         body: JSON.stringify(payload)
+     });
+     if (!res.ok) throw new Error('Failed to update model');
+     const data = await res.json();
+     return adaptModel(data.model);
+  },
+
   deleteModel: async (providerId: string, modelId: string): Promise<void> => {
-      await fetch(`${API_BASE_URL}/api/llm/providers/${providerId}/models/${modelId}`, {
+      await fetchWithTimeout(`${API_BASE_URL}/api/llm/providers/${providerId}/models/${modelId}`, {
           method: 'DELETE',
           headers: getHeaders()
       });
@@ -173,18 +234,18 @@ export const ApiClient = {
   getActiveSessions: async (cutoffTime?: number): Promise<ApiSession[]> => {
     try {
       const params = cutoffTime ? `?cutoffTime=${cutoffTime}` : '';
-      const res = await fetch(`${API_BASE_URL}/v1/chat/sessions/active${params}`, { headers: getHeaders() });
+      const res = await fetchWithTimeout(`${API_BASE_URL}/v1/chat/sessions/active${params}`, { headers: getHeaders() });
       if (!res.ok) return [];
       const data = await res.json();
-      return data.data.sessions || [];
+      return data?.data?.sessions || [];
     } catch (e) {
-      console.error("Failed to get sessions", e);
+      console.warn("API Error (Sessions):", e);
       return [];
     }
   },
 
   deleteSession: async (conversationId: string): Promise<void> => {
-    const res = await fetch(`${API_BASE_URL}/v1/chat/sessions/${conversationId}`, {
+    const res = await fetchWithTimeout(`${API_BASE_URL}/v1/chat/sessions/${conversationId}`, {
         method: 'DELETE',
         headers: getHeaders()
     });
@@ -193,10 +254,10 @@ export const ApiClient = {
 
   getSessionHistory: async (conversationId: string): Promise<SessionHistory | null> => {
       try {
-        const res = await fetch(`${API_BASE_URL}/v1/chat/sessions/${conversationId}/history`, { headers: getHeaders() });
+        const res = await fetchWithTimeout(`${API_BASE_URL}/v1/chat/sessions/${conversationId}/history`, { headers: getHeaders() });
         if (!res.ok) return null;
         const data = await res.json();
-        return data.data;
+        return data?.data || null;
       } catch {
           return null;
       }
@@ -204,7 +265,7 @@ export const ApiClient = {
 
   // System
   interruptRequest: async (requestId: string): Promise<void> => {
-      await fetch(`${API_BASE_URL}/v1/interrupt`, {
+      await fetchWithTimeout(`${API_BASE_URL}/v1/interrupt`, {
           method: 'POST',
           headers: getHeaders(),
           body: JSON.stringify({ requestId })
