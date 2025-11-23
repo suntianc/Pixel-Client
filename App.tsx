@@ -1,5 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useRef } from 'react';
 import { Theme, LLMProvider, LLMModel, Message, AceConfig, Language, ChatSession } from './types';
 import { INITIAL_ACE_CONFIG, THEME_STYLES, MASCOT_COMMENTS, TRANSLATIONS } from './constants';
 import { PixelButton, PixelSelect, PixelCard } from './components/PixelUI';
@@ -30,6 +31,9 @@ const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
+  
+  // Abort Controller for immediate client-side stop
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Delete Modal State
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -240,6 +244,13 @@ const App: React.FC = () => {
   };
 
   const handleStopGeneration = async () => {
+      // 1. Client-side abort (Immediate stop of fetch)
+      if (abortControllerRef.current) {
+          abortControllerRef.current.abort();
+          abortControllerRef.current = null;
+      }
+
+      // 2. Server-side interrupt (Tell backend to stop processing)
       if (currentRequestId) {
           try {
             await ApiClient.interruptRequest(currentRequestId);
@@ -247,8 +258,23 @@ const App: React.FC = () => {
               console.error("Failed to interrupt", e);
           }
       }
+
+      // 3. UI Update (Immediate visual feedback)
       setIsStreaming(false);
       setCurrentRequestId(null);
+      
+      // Append [Interrupted] prompt to the last message if it's from assistant
+      setMessages(prev => {
+          const last = prev[prev.length - 1];
+          if (last && last.role === 'assistant') {
+              return prev.map((msg, idx) => 
+                  idx === prev.length - 1 
+                  ? { ...msg, content: msg.content + `\n\n> ${t.interrupted}` } 
+                  : msg
+              );
+          }
+          return prev;
+      });
   };
 
   // Main Chat Handler
@@ -279,6 +305,10 @@ const App: React.FC = () => {
      };
      setMessages(prev => [...prev, botMsg]);
 
+     // 3. Setup AbortController for this request
+     const ac = new AbortController();
+     abortControllerRef.current = ac;
+
      let fullContent = '';
 
      await streamChatResponse(
@@ -292,14 +322,20 @@ const App: React.FC = () => {
          (requestId) => {
              setCurrentRequestId(requestId);
          },
-         activeSessionId
+         activeSessionId,
+         ac.signal // Pass signal to service
      );
 
-     setIsStreaming(false);
-     setCurrentRequestId(null);
-     setMascotState('happy');
-     setTimeout(() => setMascotState('idle'), 2000);
-     refreshSessions(); // Update timestamps
+     // Only clean up if we weren't aborted (streaming is still true)
+     // If aborted, handleStopGeneration takes care of state
+     if (abortControllerRef.current === ac) {
+         setIsStreaming(false);
+         setCurrentRequestId(null);
+         setMascotState('happy');
+         setTimeout(() => setMascotState('idle'), 2000);
+         refreshSessions(); // Update timestamps
+         abortControllerRef.current = null;
+     }
   };
 
   // --- Loading Screen ---

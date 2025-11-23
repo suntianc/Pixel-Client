@@ -1,4 +1,5 @@
 
+
 import { LLMProvider, LLMModel, Theme, AceConfig, Language } from './types';
 
 // ApexBridge Configuration
@@ -196,7 +197,8 @@ export const TRANSLATIONS = {
     deleteAction: "DELETE",
     thinkingProcess: "Thinking Process",
     expand: "Show",
-    collapse: "Hide"
+    collapse: "Hide",
+    interrupted: "[Interrupted]"
   },
   zh: {
     currentChatModel: "当前对话模型",
@@ -265,7 +267,8 @@ export const TRANSLATIONS = {
     deleteAction: "删除",
     thinkingProcess: "思考过程",
     expand: "展开",
-    collapse: "收起"
+    collapse: "收起",
+    interrupted: "[已中断]"
   },
   ja: {
     currentChatModel: "現在のチャットモデル",
@@ -334,6 +337,7 @@ export const TRANSLATIONS = {
     deleteAction: "削除",
     thinkingProcess: "思考プロセス",
     expand: "表示",
-    collapse: "非表示"
+    collapse: "非表示",
+    interrupted: "[中断されました]"
   }
 };

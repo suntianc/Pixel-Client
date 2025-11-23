@@ -5,6 +5,11 @@ import { PixelButton, PixelBadge } from './PixelUI';
 import { streamChatResponse } from '../services/llmService';
 import { THEME_STYLES, TRANSLATIONS } from '../constants';
 import { Send, Copy, Check, Moon, Sun, Star, Cpu, Globe, Palette, Loader2, Brain, ChevronDown, ChevronRight } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import { MermaidBlock } from './MermaidBlock';
 
 interface ChatProps {
   theme: Theme;
@@ -74,10 +79,29 @@ const ThinkingBlock: React.FC<{ content: string; theme: Theme; language: Languag
             
             {isOpen && (
                 <div className={`
-                    p-3 text-xs font-mono whitespace-pre-wrap leading-relaxed border-t-2 border-dashed border-opacity-30
+                    p-3 text-xs border-t-2 border-dashed border-opacity-30
                     ${theme === Theme.LIGHT ? 'border-gray-400 text-gray-700' : 'border-gray-600 text-gray-400'}
+                    markdown-body
                 `}>
-                    {content}
+                    <ReactMarkdown
+                        remarkPlugins={[remarkGfm, remarkMath]}
+                        rehypePlugins={[rehypeKatex]}
+                        components={{
+                            a: ({node, ...props}) => <a {...props} target="_blank" rel="noopener noreferrer" />,
+                            code: ({node, className, children, ...props}) => {
+                                const match = /language-(\w+)/.exec(className || '');
+                                const isMermaid = match && match[1] === 'mermaid';
+                                
+                                if (isMermaid) {
+                                    return <MermaidBlock code={String(children).replace(/\n$/, '')} theme={theme} />;
+                                }
+                                
+                                return <code className={className} {...props}>{children}</code>;
+                            }
+                        }}
+                    >
+                        {content}
+                    </ReactMarkdown>
                 </div>
             )}
         </div>
@@ -199,16 +223,42 @@ export const Chat: React.FC<ChatProps> = ({
       </button>
   );
 
-  // Parse message for <thinking> tags
+  // Parse message for <thinking> tags and render markdown
   const parseMessageContent = (content: string) => {
       // Split by <thinking> tag.
       // Format: [pre-text, thought_started...]
       const parts = content.split('<thinking>');
       
+      const MarkdownRenderer = ({ text }: { text: string }) => (
+        <ReactMarkdown
+            remarkPlugins={[remarkGfm, remarkMath]}
+            rehypePlugins={[rehypeKatex]}
+            components={{
+                a: ({node, ...props}) => <a {...props} target="_blank" rel="noopener noreferrer" />,
+                code: ({node, className, children, ...props}) => {
+                    const match = /language-(\w+)/.exec(className || '');
+                    const isMermaid = match && match[1] === 'mermaid';
+                    
+                    if (isMermaid) {
+                        return <MermaidBlock code={String(children).replace(/\n$/, '')} theme={theme} />;
+                    }
+                    
+                    return <code className={className} {...props}>{children}</code>;
+                }
+            }}
+        >
+            {text}
+        </ReactMarkdown>
+      );
+
       return parts.map((part, index) => {
           if (index === 0) {
               // This is the text before any thinking tag (or the whole text if no tag)
-              return <span key={`text-${index}`}>{part}</span>;
+              return (
+                <div key={`text-${index}`} className="markdown-body">
+                    <MarkdownRenderer text={part} />
+                </div>
+              );
           }
 
           // This part started with <thinking>, so check if it has a closing tag
@@ -222,8 +272,9 @@ export const Chat: React.FC<ChatProps> = ({
               return (
                   <React.Fragment key={`group-${index}`}>
                       <ThinkingBlock content={thought} theme={theme} language={language} />
-                      {/* Recursively parse the rest just in case multiple thinking blocks exist (rare but possible) */}
-                      {parseMessageContent(rest)}
+                      <div className="markdown-body">
+                         <MarkdownRenderer text={rest} />
+                      </div>
                   </React.Fragment>
               );
           } else {
@@ -263,7 +314,7 @@ export const Chat: React.FC<ChatProps> = ({
             >
               <div 
                 className={`
-                  max-w-[80%] p-4 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
+                  max-w-[85%] md:max-w-[75%] p-4 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
                   ${msg.role === 'user' ? styles.primary + ' text-white' : styles.secondary + ' ' + styles.text}
                 `}
               >
@@ -279,7 +330,7 @@ export const Chat: React.FC<ChatProps> = ({
                      <CopyButton content={msg.content} />
                   )}
                 </div>
-                <div className="whitespace-pre-wrap leading-relaxed font-chat text-sm">
+                <div className="leading-relaxed font-chat text-sm">
                   {msg.content ? (
                       parseMessageContent(msg.content)
                   ) : (

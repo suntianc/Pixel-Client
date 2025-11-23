@@ -1,4 +1,5 @@
 
+
 import { Message, LLMModel, LLMProvider } from '../types';
 import { API_BASE_URL, API_KEY } from '../constants';
 
@@ -8,7 +9,8 @@ export const streamChatResponse = async (
   provider: LLMProvider,
   onChunk: (chunk: string) => void,
   onRequestId?: (id: string) => void,
-  conversationId?: string
+  conversationId?: string,
+  signal?: AbortSignal
 ): Promise<void> => {
   
   const messagesPayload = messages.map(m => ({
@@ -35,7 +37,8 @@ export const streamChatResponse = async (
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${API_KEY}`
           },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
+          signal: signal
       });
 
       if (!response.ok) {
@@ -90,6 +93,10 @@ export const streamChatResponse = async (
       }
 
   } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+          // Client aborted, stop normally
+          return;
+      }
       console.error('Stream Error:', error);
       onChunk(`\n[Connection Error: ${error instanceof Error ? error.message : 'Unknown'}]`);
   }
