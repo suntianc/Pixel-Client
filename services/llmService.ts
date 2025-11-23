@@ -20,6 +20,7 @@ export const streamChatResponse = async (
   const payload = {
       messages: messagesPayload,
       model: model.modelId, // The model Key (e.g., gpt-4)
+      provider: provider.type, // Include provider type (e.g. openai, deepseek)
       stream: true,
       temperature: model.temperature || 0.7,
       agent_id: 'pixel-verse-agent', // Default Agent ID
