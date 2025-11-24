@@ -1,4 +1,6 @@
 
+
+
 import { Message, LLMModel, LLMProvider } from '../types';
 import { API_BASE_URL, API_KEY } from '../constants';
 
@@ -110,13 +112,22 @@ export const streamChatResponse = async (
 // New service for Mascot commentary using simple-stream
 export const fetchMascotComment = async (
   messages: Message[],
-  modelId: string
+  modelId: string,
+  systemPrompt?: string
 ): Promise<string> => {
     // Take last 20 messages
     const recentMessages = messages.slice(-20).map(m => ({
         role: m.role,
         content: m.content
     }));
+
+    // Prepend system prompt if provided
+    if (systemPrompt) {
+        recentMessages.unshift({
+            role: 'system',
+            content: systemPrompt
+        });
+    }
 
     try {
         const response = await fetch(`${API_BASE_URL}/v1/chat/simple-stream`, {
