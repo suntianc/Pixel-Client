@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect, useState } from 'react';
 import { Theme } from '../types';
 
@@ -11,7 +12,7 @@ interface MascotProps {
 
 type ActionState = 'none' | 'smoking' | 'glasses' | 'gaming' | 'phone' | 'wink';
 
-export const Mascot: React.FC<MascotProps> = ({ theme, state: appState, speechText, onSpeechEnd, className = '' }) => {
+const MascotComponent: React.FC<MascotProps> = ({ theme, state: appState, speechText, onSpeechEnd, className = '' }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [blink, setBlink] = useState(false);
   const [actionState, setActionState] = useState<ActionState>('none');
@@ -395,3 +396,5 @@ export const Mascot: React.FC<MascotProps> = ({ theme, state: appState, speechTe
     </div>
   );
 };
+
+export const Mascot = React.memo(MascotComponent);

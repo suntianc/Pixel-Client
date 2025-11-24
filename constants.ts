@@ -1,5 +1,6 @@
 
 
+
 import { LLMProvider, LLMModel, Theme, AceConfig, Language } from './types';
 
 // ApexBridge Configuration
@@ -134,7 +135,7 @@ export const TRANSLATIONS = {
   en: {
     currentChatModel: "CURRENT CHAT MODEL",
     noChatModels: "No Chat Models Available",
-    configLlms: "CONFIG LLMs",
+    configLlms: "CONFIG",
     history: "HISTORY",
     noModelSelected: "NO MODEL SELECTED",
     online: "ONLINE",
@@ -202,12 +203,15 @@ export const TRANSLATIONS = {
     interrupted: "[Interrupted]",
     deepThinking: "Deep Thinking",
     changeTheme: "Change Theme",
-    changeLanguage: "Change Language"
+    changeLanguage: "Change Language",
+    mascotConfig: "MASCOT",
+    mascotSystemPrompt: "Mascot System Prompt",
+    mascotPromptPlaceholder: "Enter custom persona instruction for the mascot..."
   },
   zh: {
     currentChatModel: "当前对话模型",
     noChatModels: "无可用聊天模型",
-    configLlms: "配置 LLM",
+    configLlms: "配置",
     history: "历史记录",
     noModelSelected: "未选择模型",
     online: "在线",
@@ -217,7 +221,7 @@ export const TRANSLATIONS = {
     generating: "生成中",
     stop: "停止",
     send: "发送",
-    llmConfig: "LLM 配置",
+    llmConfig: "配置",
     close: "关闭",
     providers: "服务商",
     models: "模型列表",
@@ -275,12 +279,15 @@ export const TRANSLATIONS = {
     interrupted: "[已中断]",
     deepThinking: "深度思考",
     changeTheme: "切换主题",
-    changeLanguage: "切换语言"
+    changeLanguage: "切换语言",
+    mascotConfig: "看板娘",
+    mascotSystemPrompt: "看板娘提示词",
+    mascotPromptPlaceholder: "输入看板娘的自定义人设指令..."
   },
   ja: {
     currentChatModel: "現在のチャットモデル",
     noChatModels: "利用可能なモデルなし",
-    configLlms: "LLM設定",
+    configLlms: "設定",
     history: "履歴",
     noModelSelected: "モデル未選択",
     online: "オンライン",
@@ -290,7 +297,7 @@ export const TRANSLATIONS = {
     generating: "生成中",
     stop: "停止",
     send: "送信",
-    llmConfig: "LLM 設定",
+    llmConfig: "設定",
     close: "閉じる",
     providers: "プロバイダー",
     models: "モデル",
@@ -348,6 +355,9 @@ export const TRANSLATIONS = {
     interrupted: "[中断されました]",
     deepThinking: "深い思考",
     changeTheme: "テーマ変更",
-    changeLanguage: "言語変更"
+    changeLanguage: "言語変更",
+    mascotConfig: "マスコット",
+    mascotSystemPrompt: "マスコットのプロンプト",
+    mascotPromptPlaceholder: "マスコットのカスタムペルソナ指示を入力..."
   }
 };

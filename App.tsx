@@ -1,5 +1,7 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+
+
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Theme, LLMProvider, LLMModel, Message, AceConfig, Language, ChatSession } from './types';
 import { INITIAL_ACE_CONFIG, THEME_STYLES, TRANSLATIONS } from './constants';
 import { PixelButton, PixelSelect, PixelCard } from './components/PixelUI';
@@ -33,6 +35,7 @@ const App: React.FC = () => {
   
   // Abort Controller for immediate client-side stop
   const abortControllerRef = useRef<AbortController | null>(null);
+  const initRef = useRef(false);
 
   // Delete Modal State
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -53,6 +56,9 @@ const App: React.FC = () => {
   // --- Effects ---
   // Initial Data Fetch
   useEffect(() => {
+    if (initRef.current) return;
+    initRef.current = true;
+
     const initData = async () => {
         try {
             const fetchedProviders = await ApiClient.getProviders();
@@ -96,7 +102,7 @@ const App: React.FC = () => {
   }, [activeSessionId]);
 
   const refreshSessions = async () => {
-      // Pass 0 to get all sessions without time limit
+      // Pass -1 to get all sessions without time limit
       const apiSessions = await ApiClient.getActiveSessions(-1);
       // Map API sessions to ChatSession type
       const mappedSessions: ChatSession[] = apiSessions.map(s => ({
@@ -153,9 +159,12 @@ const App: React.FC = () => {
     // Ensure we have an active model to use for generation
     if (Math.random() < 0.3 && !mascotComment && activeModel) {
         const fetchComment = async () => {
+            // Retrieve system prompt from local storage
+            const systemPrompt = localStorage.getItem('pixel_mascot_system_prompt') || '';
+            
             // Pass current message history (will be sliced to 20 in service)
             // Use the currently selected model's API ID (e.g. gpt-4)
-            const comment = await fetchMascotComment(messages, activeModel.modelId);
+            const comment = await fetchMascotComment(messages, activeModel.modelId, systemPrompt);
             if (comment) {
                 setMascotComment(comment);
             }
@@ -163,6 +172,11 @@ const App: React.FC = () => {
         fetchComment();
     }
   }, [messages.length, activeModel]);
+
+  // Handle mascot speech end with useCallback to prevent re-renders breaking the effect
+  const handleMascotSpeechEnd = useCallback(() => {
+    setMascotComment(null);
+  }, []);
 
   // Achievement: Daily Streak Checker
   useEffect(() => {
@@ -452,7 +466,7 @@ const App: React.FC = () => {
                 state={mascotState} 
                 className="w-32 h-32"
                 speechText={mascotComment}
-                onSpeechEnd={() => setMascotComment(null)}
+                onSpeechEnd={handleMascotSpeechEnd}
             />
         </div>
       </div>

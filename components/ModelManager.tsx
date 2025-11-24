@@ -1,9 +1,11 @@
 
+
+
 import React, { useState, useEffect } from 'react';
 import { Theme, LLMProvider, LLMModel, ModelType, AceConfig, Language } from '../types';
 import { PixelButton, PixelInput, PixelCard, PixelSelect, PixelBadge } from './PixelUI';
 import { THEME_STYLES, TRANSLATIONS } from '../constants';
-import { Trash2, Plus, Zap, X, Cpu, Save, AlertTriangle, Edit } from 'lucide-react';
+import { Trash2, Plus, Zap, X, Cpu, Save, AlertTriangle, Edit, Smile } from 'lucide-react';
 import { ApiClient } from '../services/apiClient';
 
 interface ModelManagerProps {
@@ -29,7 +31,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
   onUpdateAceConfig,
   onClose
 }) => {
-  const [activeTab, setActiveTab] = useState<'providers' | 'models' | 'ace'>('providers');
+  const [activeTab, setActiveTab] = useState<'providers' | 'models' | 'ace' | 'mascot'>('providers');
   const [testStatus, setTestStatus] = useState<string | null>(null);
   const [successCount, setSuccessCount] = useState(0);
   const [showRocket, setShowRocket] = useState(false);
@@ -54,6 +56,9 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
   // Local State for ACE Config
   const [localAceConfig, setLocalAceConfig] = useState<AceConfig>(aceConfig);
 
+  // Mascot Config State
+  const [mascotSystemPrompt, setMascotSystemPrompt] = useState('');
+
   // Fetch Data on Open
   useEffect(() => {
       const loadData = async () => {
@@ -62,6 +67,10 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
           
           const fetchedModels = await ApiClient.getAllModels();
           onUpdateModels(fetchedModels);
+
+          // Load Mascot Config
+          const storedMascotPrompt = localStorage.getItem('pixel_mascot_system_prompt');
+          if (storedMascotPrompt) setMascotSystemPrompt(storedMascotPrompt);
       };
       loadData();
   }, []);
@@ -214,6 +223,12 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
       setTimeout(() => setTestStatus(null), 2000);
   };
 
+  const handleSaveMascotConfig = () => {
+      localStorage.setItem('pixel_mascot_system_prompt', mascotSystemPrompt);
+      setTestStatus('mascot_saved');
+      setTimeout(() => setTestStatus(null), 2000);
+  };
+
   const getModelTypeColor = (type?: ModelType) => {
       // Map API types to colors
       switch(type) {
@@ -337,6 +352,13 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
           >
             {t.aceAgent}
           </PixelButton>
+           <PixelButton 
+            theme={theme} 
+            onClick={() => setActiveTab('mascot')} 
+            variant={activeTab === 'mascot' ? 'primary' : 'secondary'}
+          >
+            {t.mascotConfig}
+          </PixelButton>
         </div>
 
         {/* Content Area */}
@@ -403,6 +425,38 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
                 </div>
              </div>
           </div>
+        ) : activeTab === 'mascot' ? (
+             <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center">
+                 <div className="max-w-2xl w-full space-y-8">
+                    <div className="border-b-2 border-black pb-2 mb-4">
+                        <h3 className="text-xl font-bold flex items-center gap-2">
+                            <Smile size={24} /> {t.mascotConfig}
+                        </h3>
+                    </div>
+
+                    <div className="space-y-4">
+                        <label className={`text-sm font-bold uppercase ${styles.text}`}>{t.mascotSystemPrompt}</label>
+                        <textarea
+                            className={`
+                                w-full p-4 h-64 outline-none border-2 border-black
+                                ${styles.inputBg} ${styles.text}
+                                resize-none focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)]
+                                transition-all duration-200 font-mono text-sm
+                            `}
+                            placeholder={t.mascotPromptPlaceholder}
+                            value={mascotSystemPrompt}
+                            onChange={(e) => setMascotSystemPrompt(e.target.value)}
+                        />
+                    </div>
+
+                     <div className="flex justify-end gap-4 items-center border-t-4 border-black pt-4">
+                        {testStatus === 'mascot_saved' && <span className="text-green-500 font-bold animate-pulse">{t.configSaved}</span>}
+                        <PixelButton theme={theme} onClick={handleSaveMascotConfig}>
+                             <Save className="w-4 h-4" /> {t.saveConfig}
+                        </PixelButton>
+                    </div>
+                 </div>
+             </div>
         ) : (
           <div className="flex-1 overflow-y-auto flex gap-4">
             {/* List Column */}
