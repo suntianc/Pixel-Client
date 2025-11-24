@@ -3,8 +3,9 @@
 import { LLMProvider, LLMModel, Theme, AceConfig, Language } from './types';
 
 // ApexBridge Configuration
-export const API_BASE_URL = 'http://localhost:3000';
-export const API_KEY = 'sk-apex-bridge-key'; // Replace with your actual bridge key
+// 从环境变量读取配置，如果未设置则使用默认值
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+export const API_KEY = import.meta.env.VITE_API_KEY || 'sk-apex-bridge-key'; // Replace with your actual bridge key
 
 export const INITIAL_PROVIDERS: LLMProvider[] = []; // Will be fetched from API
 export const INITIAL_MODELS: LLMModel[] = []; // Will be fetched from API

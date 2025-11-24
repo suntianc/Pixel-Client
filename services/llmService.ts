@@ -12,7 +12,7 @@ export const streamChatResponse = async (
   conversationId?: string,
   signal?: AbortSignal
 ): Promise<void> => {
-  
+
   const messagesPayload = messages.map(m => ({
       role: m.role,
       content: m.content
@@ -68,14 +68,14 @@ export const streamChatResponse = async (
           for (const line of lines) {
               const trimmed = line.trim();
               if (!trimmed.startsWith('data: ')) continue;
-              
+
               const dataStr = trimmed.substring(6); // Remove "data: "
-              
+
               if (dataStr === '[DONE]') return;
 
               try {
                   const json = JSON.parse(dataStr);
-                  
+
                   // Extract Request ID from the first valid chunk
                   if (!firstChunkProcessed && json.id && onRequestId) {
                       onRequestId(json.id);
