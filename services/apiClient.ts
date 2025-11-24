@@ -254,7 +254,11 @@ export const ApiClient = {
       const res = await fetchWithTimeout(`${API_BASE_URL}/v1/chat/sessions/active${params}`, { headers: getHeaders() });
       if (!res.ok) return [];
       const data = await res.json();
-      return data?.data?.sessions || [];
+      // Handle potential variations in API response structure
+      // Some endpoints return data directly, others wrap in 'data' field
+      if (Array.isArray(data.sessions)) return data.sessions;
+      if (data.data && Array.isArray(data.data.sessions)) return data.data.sessions;
+      return [];
     } catch (e) {
       console.warn("API Error (Sessions):", e);
       return [];
@@ -285,7 +289,8 @@ export const ApiClient = {
           const res = await fetchWithTimeout(`${API_BASE_URL}/v1/chat/sessions/${conversationId}/messages?limit=${limit}&offset=${offset}`, { headers: getHeaders() });
           if (!res.ok) return [];
           const data = await res.json();
-          const apiMessages: ApiMessage[] = data?.data?.messages || [];
+          // Some APIs might wrap in data.data.messages or data.messages
+          const apiMessages: ApiMessage[] = data?.data?.messages || data?.messages || [];
           return apiMessages.map(adaptMessage);
       } catch (e) {
           console.warn("API Error (Messages):", e);
