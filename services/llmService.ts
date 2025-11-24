@@ -1,5 +1,4 @@
 
-
 import { Message, LLMModel, LLMProvider } from '../types';
 import { API_BASE_URL, API_KEY } from '../constants';
 
@@ -10,7 +9,8 @@ export const streamChatResponse = async (
   onChunk: (chunk: string) => void,
   onRequestId?: (id: string) => void,
   conversationId?: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  deepThinkingEnabled?: boolean
 ): Promise<void> => {
   
   const messagesPayload = messages.map(m => ({
@@ -27,7 +27,12 @@ export const streamChatResponse = async (
       temperature: model.temperature || 0.7,
       agent_id: 'pixel-verse-agent', // Default Agent ID
       conversation_id: conversationId || 'pixel-session-1',
-      user_id: 'pixel-user'
+      user_id: 'pixel-user',
+      selfThinking: {
+          enabled: deepThinkingEnabled || false,
+          maxIterations: 5,
+          includeThoughtsInResponse: true
+      }
   };
 
   try {
@@ -100,4 +105,73 @@ export const streamChatResponse = async (
       console.error('Stream Error:', error);
       onChunk(`\n[Connection Error: ${error instanceof Error ? error.message : 'Unknown'}]`);
   }
+};
+
+// New service for Mascot commentary using simple-stream
+export const fetchMascotComment = async (
+  messages: Message[],
+  modelId: string
+): Promise<string> => {
+    // Take last 20 messages
+    const recentMessages = messages.slice(-20).map(m => ({
+        role: m.role,
+        content: m.content
+    }));
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/v1/chat/simple-stream`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${API_KEY}`
+            },
+            body: JSON.stringify({
+                messages: recentMessages,
+                model: modelId,
+                temperature: 0.7
+            })
+        });
+
+        if (!response.ok) {
+            console.warn("Mascot comment fetch failed:", response.status);
+            return "";
+        }
+
+        const reader = response.body?.getReader();
+        if (!reader) return "";
+
+        const decoder = new TextDecoder();
+        let fullText = '';
+        let buffer = '';
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value, { stream: true });
+            buffer += chunk;
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed.startsWith('data: ')) continue;
+                const dataStr = trimmed.substring(6);
+                if (dataStr === '[DONE]') continue;
+
+                try {
+                    const json = JSON.parse(dataStr);
+                    const content = json.choices?.[0]?.delta?.content;
+                    if (content) fullText += content;
+                } catch (e) {
+                    // Ignore parse errors for mascot stream
+                }
+            }
+        }
+        return fullText;
+
+    } catch (e) {
+        console.error("Error fetching mascot comment", e);
+        return "";
+    }
 };

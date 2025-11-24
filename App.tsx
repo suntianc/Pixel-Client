@@ -1,15 +1,14 @@
 
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Theme, LLMProvider, LLMModel, Message, AceConfig, Language, ChatSession } from './types';
-import { INITIAL_ACE_CONFIG, THEME_STYLES, MASCOT_COMMENTS, TRANSLATIONS } from './constants';
+import { INITIAL_ACE_CONFIG, THEME_STYLES, TRANSLATIONS } from './constants';
 import { PixelButton, PixelSelect, PixelCard } from './components/PixelUI';
 import { ModelManager } from './components/ModelManager';
 import { Chat } from './components/Chat';
 import { Mascot } from './components/Mascot';
 import { Settings, Search, ChevronLeft, ChevronRight, Trash2, RefreshCcw, AlertCircle, AlertTriangle } from 'lucide-react';
 import { ApiClient } from './services/apiClient';
-import { streamChatResponse } from './services/llmService';
+import { streamChatResponse, fetchMascotComment } from './services/llmService';
 
 const App: React.FC = () => {
   // --- State ---
@@ -146,19 +145,24 @@ const App: React.FC = () => {
     }
   }, [models, activeModelId]);
 
-  // Random Mascot Commentary Logic
+  // Dynamic Mascot Commentary Logic (Bound to simple-stream)
   useEffect(() => {
     if (messages.length === 0) return;
 
     // 30% chance to trigger a comment when messages update
-    if (Math.random() < 0.3 && !mascotComment) {
-        const currentLangComments = MASCOT_COMMENTS[language];
-        const randomComment = currentLangComments[Math.floor(Math.random() * currentLangComments.length)];
-        setTimeout(() => {
-            setMascotComment(randomComment);
-        }, 1000);
+    // Ensure we have an active model to use for generation
+    if (Math.random() < 0.3 && !mascotComment && activeModel) {
+        const fetchComment = async () => {
+            // Pass current message history (will be sliced to 20 in service)
+            // Use the currently selected model's API ID (e.g. gpt-4)
+            const comment = await fetchMascotComment(messages, activeModel.modelId);
+            if (comment) {
+                setMascotComment(comment);
+            }
+        };
+        fetchComment();
     }
-  }, [messages.length, language]);
+  }, [messages.length, activeModel]);
 
   // Achievement: Daily Streak Checker
   useEffect(() => {
@@ -279,7 +283,7 @@ const App: React.FC = () => {
   };
 
   // Main Chat Handler
-  const handleSendMessage = async (msg: Message) => {
+  const handleSendMessage = async (msg: Message, options?: { deepThinking: boolean }) => {
      if (msg.role === 'assistant') {
          setMessages(prev => [...prev, msg]);
          return; 
@@ -324,7 +328,8 @@ const App: React.FC = () => {
              setCurrentRequestId(requestId);
          },
          activeSessionId,
-         ac.signal // Pass signal to service
+         ac.signal, // Pass signal to service
+         options?.deepThinking // Pass deep thinking flag
      );
 
      // Only clean up if we weren't aborted (streaming is still true)

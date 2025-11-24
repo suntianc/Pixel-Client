@@ -198,7 +198,10 @@ export const TRANSLATIONS = {
     thinkingProcess: "Thinking Process",
     expand: "Show",
     collapse: "Hide",
-    interrupted: "[Interrupted]"
+    interrupted: "[Interrupted]",
+    deepThinking: "Deep Thinking",
+    changeTheme: "Change Theme",
+    changeLanguage: "Change Language"
   },
   zh: {
     currentChatModel: "当前对话模型",
@@ -268,7 +271,10 @@ export const TRANSLATIONS = {
     thinkingProcess: "思考过程",
     expand: "展开",
     collapse: "收起",
-    interrupted: "[已中断]"
+    interrupted: "[已中断]",
+    deepThinking: "深度思考",
+    changeTheme: "切换主题",
+    changeLanguage: "切换语言"
   },
   ja: {
     currentChatModel: "現在のチャットモデル",
@@ -338,6 +344,9 @@ export const TRANSLATIONS = {
     thinkingProcess: "思考プロセス",
     expand: "表示",
     collapse: "非表示",
-    interrupted: "[中断されました]"
+    interrupted: "[中断されました]",
+    deepThinking: "深い思考",
+    changeTheme: "テーマ変更",
+    changeLanguage: "言語変更"
   }
 };
