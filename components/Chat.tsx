@@ -1,9 +1,11 @@
+
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Theme, Message, LLMModel, LLMProvider, Language } from '../types';
 import { PixelButton, PixelBadge } from './PixelUI';
 import { streamChatResponse } from '../services/llmService';
 import { THEME_STYLES, TRANSLATIONS } from '../constants';
-import { Send, Copy, Check, Moon, Sun, Star, Cpu, Globe, Palette, Loader2, Brain, ChevronDown, ChevronRight } from 'lucide-react';
+import { Send, Copy, Check, Moon, Sun, Star, Cpu, Globe, Palette, Loader2, Brain, ChevronDown, ChevronRight, BrainCircuit } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -16,7 +18,7 @@ interface ChatProps {
   messages: Message[];
   activeModel: LLMModel | null;
   provider: LLMProvider | null;
-  onSendMessage: (msg: Message) => void;
+  onSendMessage: (msg: Message, options?: { deepThinking: boolean }) => void;
   onUpdateMessage: (id: string, content: string) => void;
   setMascotState: (state: 'idle' | 'thinking' | 'happy' | 'shocked') => void;
   onTriggerRainbow: () => void;
@@ -214,6 +216,7 @@ export const Chat: React.FC<ChatProps> = ({
   const [localIsStreaming, setLocalIsStreaming] = useState(false);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [showLangMenu, setShowLangMenu] = useState(false);
+  const [isDeepThinking, setIsDeepThinking] = useState(false);
   
   const isStreaming = externalIsStreaming || localIsStreaming;
 
@@ -256,7 +259,7 @@ export const Chat: React.FC<ChatProps> = ({
       timestamp: Date.now()
     };
 
-    onSendMessage(userMsg);
+    onSendMessage(userMsg, { deepThinking: isDeepThinking });
     setInput('');
     setMascotState('thinking');
     setLocalIsStreaming(true);
@@ -374,7 +377,7 @@ export const Chat: React.FC<ChatProps> = ({
                         theme={theme} 
                         variant="secondary" 
                         className="w-9 h-9 !p-0 flex items-center justify-center" 
-                        title="Change Theme"
+                        title={t.changeTheme}
                         onClick={() => {
                             if (!showThemeMenu) setShowLangMenu(false);
                             setShowThemeMenu(!showThemeMenu);
@@ -400,7 +403,7 @@ export const Chat: React.FC<ChatProps> = ({
                         theme={theme} 
                         variant="secondary" 
                         className="w-9 h-9 !p-0 flex items-center justify-center" 
-                        title="Change Language"
+                        title={t.changeLanguage}
                         onClick={() => {
                              if (!showLangMenu) setShowThemeMenu(false);
                              setShowLangMenu(!showLangMenu);
@@ -417,6 +420,20 @@ export const Chat: React.FC<ChatProps> = ({
                      <span className="animate-spin mr-2">★</span> {t.generating}
                    </div>
                 )}
+                
+                {/* Deep Thinking Toggle */}
+                {!isStreaming && (
+                   <PixelButton 
+                       theme={theme} 
+                       variant={isDeepThinking ? 'primary' : 'secondary'}
+                       className={`w-9 h-9 !p-0 flex items-center justify-center ${isDeepThinking ? 'bg-green-500 border-green-700' : ''}`}
+                       onClick={() => setIsDeepThinking(!isDeepThinking)}
+                       title={t.deepThinking}
+                   >
+                       <BrainCircuit size={20} className={isDeepThinking ? "animate-pulse text-white" : "opacity-50"} />
+                   </PixelButton>
+                )}
+
                 <PixelButton 
                     theme={theme} 
                     onClick={isStreaming ? onStop : handleSend} 
