@@ -1,6 +1,5 @@
 
 
-
 import { Message, LLMModel, LLMProvider } from '../types';
 import { API_BASE_URL, API_KEY } from '../constants';
 
@@ -32,8 +31,8 @@ export const streamChatResponse = async (
       user_id: 'pixel-user',
       selfThinking: {
           enabled: deepThinkingEnabled || false,
-          maxIterations: 5,
-          includeThoughtsInResponse: true
+          includeThoughtsInResponse: true,
+          enableStreamThoughts: true
       }
   };
 
