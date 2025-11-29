@@ -1,3 +1,4 @@
+
 import { Message, LLMModel, LLMProvider } from '../types';
 import { API_BASE_URL, API_KEY } from '../constants';
 
@@ -11,7 +12,7 @@ export const streamChatResponse = async (
   signal?: AbortSignal,
   deepThinkingEnabled: boolean = false
 ): Promise<void> => {
-
+  
   const messagesPayload = messages.map(m => ({
       role: m.role,
       content: m.content
@@ -73,9 +74,9 @@ export const streamChatResponse = async (
           for (const line of lines) {
               const trimmed = line.trim();
               if (!trimmed.startsWith('data: ')) continue;
-
+              
               const dataStr = trimmed.substring(6); // Remove "data: "
-
+              
               if (dataStr === '[DONE]') {
                   if (isThinking) {
                       onChunk('</thinking>'); // Close tag if stream ends while thinking
@@ -85,20 +86,36 @@ export const streamChatResponse = async (
 
               try {
                   const json = JSON.parse(dataStr);
-
+                  
                   // Extract Request ID from the first valid chunk
                   if (!firstChunkProcessed && json.id && onRequestId) {
                       onRequestId(json.id);
                       firstChunkProcessed = true;
                   }
 
-                  // Handle various API formats:
-                  // 1. Root level (custom): { "reasoning_content": "...", "content": "..." }
-                  // 2. OpenAI/DeepSeek standard: { choices: [{ delta: { "reasoning_content": "...", "content": "..." } }] }
-
                   const delta = json.choices?.[0]?.delta || json;
-                  const reasoning = delta.reasoning_content;
-                  const content = delta.content;
+                  
+                  // --- CRITICAL FIX FOR NESTED JSON STREAMING ---
+                  // The backend might send the delta as: { content: "{\"reasoning_content\":\"...\"}" }
+                  // We need to parse this stringified JSON to extract the actual fields.
+                  
+                  let reasoning = delta.reasoning_content;
+                  let content = delta.content;
+
+                  if (typeof content === 'string' && content.trim().startsWith('{')) {
+                      try {
+                          const nested = JSON.parse(content);
+                          // Check if the parsed object has the expected fields
+                          if (nested.reasoning_content !== undefined || nested.content !== undefined) {
+                              reasoning = nested.reasoning_content;
+                              // If 'content' in nested JSON is null/undefined, use that. 
+                              // Otherwise we would output the raw JSON string as content!
+                              content = nested.content; 
+                          }
+                      } catch (e) {
+                          // Not valid JSON, treat as normal text content
+                      }
+                  }
 
                   // Handle Reasoning Content
                   if (reasoning) {
@@ -125,7 +142,7 @@ export const streamChatResponse = async (
               }
           }
       }
-
+      
       // Cleanup
       if (isThinking) {
           onChunk('</thinking>');
