@@ -1,4 +1,3 @@
-
 import { Message, LLMModel, LLMProvider } from '../types';
 import { API_BASE_URL, API_KEY } from '../constants';
 
@@ -96,7 +95,7 @@ export const streamChatResponse = async (
                   // Handle various API formats:
                   // 1. Root level (custom): { "reasoning_content": "...", "content": "..." }
                   // 2. OpenAI/DeepSeek standard: { choices: [{ delta: { "reasoning_content": "...", "content": "..." } }] }
-                  
+
                   const delta = json.choices?.[0]?.delta || json;
                   const reasoning = delta.reasoning_content;
                   const content = delta.content;
@@ -126,7 +125,7 @@ export const streamChatResponse = async (
               }
           }
       }
-      
+
       // Cleanup
       if (isThinking) {
           onChunk('</thinking>');
