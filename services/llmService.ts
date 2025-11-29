@@ -1,5 +1,3 @@
-
-
 import { Message, LLMModel, LLMProvider } from '../types';
 import { API_BASE_URL, API_KEY } from '../constants';
 
@@ -11,7 +9,7 @@ export const streamChatResponse = async (
   onRequestId?: (id: string) => void,
   conversationId?: string,
   signal?: AbortSignal,
-  deepThinkingEnabled?: boolean
+  deepThinkingEnabled: boolean = false
 ): Promise<void> => {
   
   const messagesPayload = messages.map(m => ({
@@ -29,11 +27,11 @@ export const streamChatResponse = async (
       agent_id: 'pixel-verse-agent', // Default Agent ID
       conversation_id: conversationId || 'pixel-session-1',
       user_id: 'pixel-user',
-      selfThinking: {
-          enabled: deepThinkingEnabled || false,
+      selfThinking: deepThinkingEnabled ? {
+          enabled: true,
           includeThoughtsInResponse: true,
           enableStreamThoughts: true
-      }
+      } : undefined
   };
 
   try {

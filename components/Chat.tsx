@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Theme, Message, LLMModel, LLMProvider, Language } from '../types';
 import { PixelButton, PixelBadge } from './PixelUI';
@@ -18,7 +16,7 @@ interface ChatProps {
   messages: Message[];
   activeModel: LLMModel | null;
   provider: LLMProvider | null;
-  onSendMessage: (msg: Message, options?: { deepThinking: boolean }) => void;
+  onSendMessage: (msg: Message, options?: { deepThinkingEnabled: boolean }) => void;
   onUpdateMessage: (id: string, content: string) => void;
   setMascotState: (state: 'idle' | 'thinking' | 'happy' | 'shocked') => void;
   onTriggerRainbow: () => void;
@@ -82,17 +80,18 @@ const ThinkingBlock: React.FC<{ content: string; theme: Theme; language: Languag
 
     return (
         <div className={`
-            my-3 border-2 border-dashed border-opacity-50
+            my-3 border-2 border-dashed border-opacity-50 rounded-sm overflow-hidden
             ${theme === Theme.LIGHT ? 'border-gray-400 bg-gray-50' : 'border-gray-600 bg-black/20'}
         `}>
             <button 
                 onClick={() => setIsOpen(!isOpen)}
                 className={`
                     w-full flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-wide
-                    opacity-70 hover:opacity-100 transition-opacity
+                    opacity-70 hover:opacity-100 transition-opacity select-none
+                    ${theme === Theme.LIGHT ? 'hover:bg-gray-200' : 'hover:bg-white/5'}
                 `}
             >
-                <Brain size={14} />
+                <Brain size={14} className="opacity-70" />
                 <span className="flex-1 text-left">{t.thinkingProcess}</span>
                 <span className="flex items-center gap-1 opacity-50">
                     {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -103,7 +102,7 @@ const ThinkingBlock: React.FC<{ content: string; theme: Theme; language: Languag
             {isOpen && (
                 <div className={`
                     p-3 text-xs border-t-2 border-dashed border-opacity-30
-                    ${theme === Theme.LIGHT ? 'border-gray-400 text-gray-700' : 'border-gray-600 text-gray-400'}
+                    ${theme === Theme.LIGHT ? 'border-gray-400 text-gray-700 bg-white' : 'border-gray-600 text-gray-300 bg-black/40'}
                     markdown-body
                 `}>
                    <MarkdownRenderer text={content} theme={theme} />
@@ -114,10 +113,21 @@ const ThinkingBlock: React.FC<{ content: string; theme: Theme; language: Languag
 });
 
 const parseMessageContent = (content: string, theme: Theme, language: Language) => {
+    // Regex to split by <thinking> tags, capturing the content in between
     const parts = content.split('<thinking>');
     
+    if (parts.length === 1) {
+        return (
+            <div className="markdown-body">
+                 <MarkdownRenderer text={content} theme={theme} />
+            </div>
+        );
+    }
+
     return parts.map((part, index) => {
         if (index === 0) {
+            // Text before the first <thinking> tag (usually empty, but handle just in case)
+            if (!part.trim()) return null;
             return (
               <div key={`text-${index}`} className="markdown-body">
                   <MarkdownRenderer text={part} theme={theme} />
@@ -129,17 +139,20 @@ const parseMessageContent = (content: string, theme: Theme, language: Language) 
         
         if (closingIndex !== -1) {
             const thought = part.substring(0, closingIndex);
-            const rest = part.substring(closingIndex + 11); 
+            const rest = part.substring(closingIndex + 11); // 11 is length of </thinking>
             
             return (
                 <React.Fragment key={`group-${index}`}>
                     <ThinkingBlock content={thought} theme={theme} language={language} />
-                    <div className="markdown-body">
-                       <MarkdownRenderer text={rest} theme={theme} />
-                    </div>
+                    {rest.trim() && (
+                        <div className="markdown-body">
+                           <MarkdownRenderer text={rest} theme={theme} />
+                        </div>
+                    )}
                 </React.Fragment>
             );
         } else {
+            // Unclosed thinking tag (streaming)
             return (
                 <ThinkingBlock key={`thinking-${index}`} content={part} theme={theme} language={language} />
             );
@@ -216,7 +229,7 @@ export const Chat: React.FC<ChatProps> = ({
   const [localIsStreaming, setLocalIsStreaming] = useState(false);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [showLangMenu, setShowLangMenu] = useState(false);
-  const [isDeepThinking, setIsDeepThinking] = useState(false);
+  const [isDeepThinkingEnabled, setIsDeepThinkingEnabled] = useState(false);
   
   const isStreaming = externalIsStreaming || localIsStreaming;
 
@@ -259,7 +272,7 @@ export const Chat: React.FC<ChatProps> = ({
       timestamp: Date.now()
     };
 
-    onSendMessage(userMsg, { deepThinking: isDeepThinking });
+    onSendMessage(userMsg, { deepThinkingEnabled: isDeepThinkingEnabled });
     setInput('');
     setMascotState('thinking');
     setLocalIsStreaming(true);
@@ -415,25 +428,26 @@ export const Chat: React.FC<ChatProps> = ({
              </div>
              
              <div className="flex gap-2">
+                {/* Deep Thinking Toggle */}
+                <PixelButton
+                    theme={theme}
+                    variant={isDeepThinkingEnabled ? 'primary' : 'secondary'}
+                    className={`
+                        w-9 h-9 !p-0 flex items-center justify-center
+                        ${isDeepThinkingEnabled ? 'border-blue-500 shadow-[2px_2px_0px_0px_rgba(59,130,246,1)]' : ''}
+                    `}
+                    title={t.deepThinking}
+                    onClick={() => setIsDeepThinkingEnabled(!isDeepThinkingEnabled)}
+                >
+                    <BrainCircuit size={20} className={isDeepThinkingEnabled ? 'text-white' : ''} />
+                </PixelButton>
+
                 {isStreaming && (
                    <div className={`flex items-center mr-4 ${styles.text}`}>
                      <span className="animate-spin mr-2">★</span> {t.generating}
                    </div>
                 )}
                 
-                {/* Deep Thinking Toggle */}
-                {!isStreaming && (
-                   <PixelButton 
-                       theme={theme} 
-                       variant={isDeepThinking ? 'primary' : 'secondary'}
-                       className={`w-9 h-9 !p-0 flex items-center justify-center ${isDeepThinking ? 'bg-green-500 border-green-700' : ''}`}
-                       onClick={() => setIsDeepThinking(!isDeepThinking)}
-                       title={t.deepThinking}
-                   >
-                       <BrainCircuit size={20} className={isDeepThinking ? "animate-pulse text-white" : "opacity-50"} />
-                   </PixelButton>
-                )}
-
                 <PixelButton 
                     theme={theme} 
                     onClick={isStreaming ? onStop : handleSend} 

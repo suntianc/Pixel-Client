@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Theme, LLMProvider, LLMModel, Message, AceConfig, Language, ChatSession } from './types';
 import { INITIAL_ACE_CONFIG, THEME_STYLES, TRANSLATIONS } from './constants';
@@ -295,7 +294,7 @@ const App: React.FC = () => {
   };
 
   // Main Chat Handler
-  const handleSendMessage = async (msg: Message, options?: { deepThinking: boolean }) => {
+  const handleSendMessage = async (msg: Message, options?: { deepThinkingEnabled: boolean }) => {
      if (msg.role === 'assistant') {
          setMessages(prev => [...prev, msg]);
          return; 
@@ -340,8 +339,8 @@ const App: React.FC = () => {
              setCurrentRequestId(requestId);
          },
          activeSessionId,
-         ac.signal, // Pass signal to service
-         options?.deepThinking // Pass deep thinking flag
+         ac.signal,
+         options?.deepThinkingEnabled
      );
 
      // Only clean up if we weren't aborted (streaming is still true)
