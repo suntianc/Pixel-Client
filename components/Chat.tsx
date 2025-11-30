@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Theme, Message, LLMModel, LLMProvider, Language } from '../types';
 import { PixelButton, PixelBadge } from './PixelUI';
@@ -8,6 +9,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
+import rehypeRaw from 'rehype-raw';
 import { MermaidBlock } from './MermaidBlock';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -129,10 +131,12 @@ const HtmlPreviewBlock: React.FC<{ code: string; theme: Theme }> = ({ code, them
 
 // Helper to detect media types from URL
 const getMediaType = (url: string) => {
+    if (!url) return 'link';
     const cleanUrl = url.split('?')[0].toLowerCase();
     if (cleanUrl.match(/\.(mp4|webm|mov|mkv)$/)) return 'video';
     if (cleanUrl.match(/\.(mp3|wav|ogg|m4a)$/)) return 'audio';
     if (cleanUrl.match(/\.(glb|gltf)$/)) return 'model';
+    if (cleanUrl.match(/\.html?$/)) return 'html';
     return 'link';
 };
 
@@ -142,8 +146,30 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
     return (
         <ReactMarkdown
             remarkPlugins={[remarkGfm, remarkMath]}
-            rehypePlugins={[rehypeKatex]}
+            rehypePlugins={[rehypeKatex, rehypeRaw]}
             components={{
+                // Prevent dangerous or layout-breaking tags from rendering directly
+                style: () => null,
+                script: () => null,
+                link: () => null,
+                meta: () => null,
+                head: () => null,
+                html: ({children}) => <>{children}</>, 
+                body: ({children}) => <>{children}</>,
+
+                // Raw HTML Media Handling
+                video: ({node, src, ...props}: any) => (
+                     <MediaFrame theme={theme} label="Video Feed" icon={<Play size={14} />}>
+                        <video controls className="w-full max-h-[400px]" src={src as string} {...props} />
+                     </MediaFrame>
+                ),
+                audio: ({node, src, ...props}: any) => (
+                    <MediaFrame theme={theme} label="Audio Log" icon={<Play size={14} />}>
+                        <audio controls className="w-full" src={src as string} {...props} />
+                    </MediaFrame>
+                ),
+
+                // Markdown Link Handling
                 a: ({node, href, children, ...props}) => {
                     const url = (typeof href === 'string' ? href : undefined) || '';
                     const type = getMediaType(url);
@@ -177,9 +203,23 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
                             </MediaFrame>
                         );
                     }
+                    if (type === 'html') {
+                        return (
+                            <MediaFrame theme={theme} label="WEB PREVIEW" icon={<Globe size={14} />}>
+                                <iframe 
+                                    src={url} 
+                                    className="w-full h-[400px] border-none bg-white" 
+                                    sandbox="allow-scripts" 
+                                    title="Web Preview"
+                                />
+                            </MediaFrame>
+                        );
+                    }
                     
                     return <a href={href as string} className="text-blue-500 hover:text-blue-400 underline break-all" target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
                 },
+                
+                // Markdown Image Handling
                 img: ({node, src, alt, ...props}) => {
                     const url = (typeof src === 'string' ? src : undefined) || '';
                     const type = getMediaType(url);
