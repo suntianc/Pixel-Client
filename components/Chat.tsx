@@ -8,7 +8,6 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-import rehypeRaw from 'rehype-raw';
 import { MermaidBlock } from './MermaidBlock';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -128,25 +127,25 @@ const HtmlPreviewBlock: React.FC<{ code: string; theme: Theme }> = ({ code, them
     );
 };
 
+// Helper to detect media types from URL
+const getMediaType = (url: string) => {
+    const cleanUrl = url.split('?')[0].toLowerCase();
+    if (cleanUrl.match(/\.(mp4|webm|mov|mkv)$/)) return 'video';
+    if (cleanUrl.match(/\.(mp3|wav|ogg|m4a)$/)) return 'audio';
+    if (cleanUrl.match(/\.(glb|gltf)$/)) return 'model';
+    return 'link';
+};
+
 // Memoized Markdown Renderer to prevent re-parsing on every render
 const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({ text, theme }) => {
     
-    // Helper to detect media types from URL
-    const getMediaType = (url: string) => {
-        const cleanUrl = url.split('?')[0].toLowerCase();
-        if (cleanUrl.match(/\.(mp4|webm|mov|mkv)$/)) return 'video';
-        if (cleanUrl.match(/\.(mp3|wav|ogg|m4a)$/)) return 'audio';
-        if (cleanUrl.match(/\.(glb|gltf)$/)) return 'model';
-        return 'link';
-    };
-
     return (
         <ReactMarkdown
             remarkPlugins={[remarkGfm, remarkMath]}
-            rehypePlugins={[rehypeKatex, rehypeRaw]}
+            rehypePlugins={[rehypeKatex]}
             components={{
                 a: ({node, href, children, ...props}) => {
-                    const url = href || '';
+                    const url = (typeof href === 'string' ? href : undefined) || '';
                     const type = getMediaType(url);
                     
                     if (type === 'video') {
@@ -179,14 +178,46 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
                         );
                     }
                     
-                    return <a href={href} className="text-blue-500 hover:text-blue-400 underline break-all" target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
+                    return <a href={href as string} className="text-blue-500 hover:text-blue-400 underline break-all" target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
                 },
                 img: ({node, src, alt, ...props}) => {
+                    const url = (typeof src === 'string' ? src : undefined) || '';
+                    const type = getMediaType(url);
+
+                    if (type === 'video') {
+                        return (
+                            <MediaFrame theme={theme} label="Video Feed" icon={<Play size={14} />}>
+                                <video controls className="w-full max-h-[400px]" src={url} />
+                            </MediaFrame>
+                        );
+                    }
+                    if (type === 'audio') {
+                        return (
+                            <MediaFrame theme={theme} label="Audio Log" icon={<Play size={14} />}>
+                                <audio controls className="w-full" src={url} />
+                            </MediaFrame>
+                        );
+                    }
+                    if (type === 'model') {
+                        const ModelViewerComponent = 'model-viewer' as any;
+                        return (
+                            <MediaFrame theme={theme} label="3D Asset" icon={<Box size={14} />}>
+                                <ModelViewerComponent 
+                                    src={url} 
+                                    camera-controls 
+                                    auto-rotate 
+                                    shadow-intensity="1"
+                                    style={{ width: '100%', height: '300px', backgroundColor: theme === Theme.LIGHT ? '#f0f0f0' : '#1a1a1a' }} 
+                                />
+                            </MediaFrame>
+                        );
+                    }
+
                     return (
                         <div className="my-2 inline-block relative group">
                             <div className="absolute inset-0 border-2 border-black pointer-events-none z-10"></div>
                             <img 
-                                src={src} 
+                                src={src as string} 
                                 alt={alt} 
                                 className="max-w-full h-auto shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)] bg-gray-200 image-pixelated" 
                                 loading="lazy"
