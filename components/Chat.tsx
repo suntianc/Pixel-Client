@@ -4,7 +4,7 @@ import { Theme, Message, LLMModel, LLMProvider, Language } from '../types';
 import { PixelButton, PixelBadge } from './PixelUI';
 import { streamChatResponse } from '../services/llmService';
 import { THEME_STYLES, TRANSLATIONS } from '../constants';
-import { Send, Copy, Check, Moon, Sun, Star, Cpu, Globe, Palette, Loader2, Brain, ChevronDown, ChevronRight, BrainCircuit, Play, Pause, Maximize, FileCode, Box } from 'lucide-react';
+import { Send, Copy, Check, Moon, Sun, Star, Cpu, Globe, Palette, Loader2, Brain, ChevronDown, ChevronRight, BrainCircuit, Play, Pause, Maximize, FileCode, Box, Terminal, Settings2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -371,51 +371,137 @@ const ThinkingBlock: React.FC<{ content: string; theme: Theme; language: Languag
     );
 });
 
-const parseMessageContent = (content: string, theme: Theme, language: Language) => {
-    // Regex to split by <thinking> tags, capturing the content in between
-    const parts = content.split('<thinking>');
+const ToolActionBlock: React.FC<{ content: string; theme: Theme; language?: Language }> = React.memo(({ content, theme, language = 'en' }) => {
+    const isLight = theme === Theme.LIGHT;
     
-    if (parts.length === 1) {
+    // Parse XML
+    const { name, params, error } = useMemo(() => {
+        try {
+            // Check for unclosed tag if streaming, attempt to close it
+            let safeContent = content;
+            if (!content.includes('</tool_action>')) {
+                safeContent += '</tool_action>';
+            }
+
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(safeContent, "text/xml");
+            
+            // Check for parser errors
+            const parseError = doc.querySelector("parsererror");
+            if (parseError) {
+                return { name: 'Unknown', params: [], error: parseError.textContent };
+            }
+
+            const root = doc.querySelector("tool_action");
+            if (!root) return { name: 'Unknown', params: [], error: 'Invalid XML structure' };
+
+            const toolName = root.getAttribute("name") || "Unknown Tool";
+            
+            // Extract parameters from child nodes
+            const extractedParams: { key: string, attrs: Record<string,string>, value: string }[] = [];
+            
+            Array.from(root.children).forEach(child => {
+                const attrs: Record<string, string> = {};
+                Array.from(child.attributes).forEach(attr => {
+                    attrs[attr.name] = attr.value;
+                });
+                extractedParams.push({
+                    key: child.tagName,
+                    attrs,
+                    value: child.textContent || ''
+                });
+            });
+
+            return { name: toolName, params: extractedParams, error: null };
+        } catch (e) {
+            return { name: 'Error', params: [], error: String(e) };
+        }
+    }, [content]);
+
+    // Localization
+    const titleText = useMemo(() => {
+        if (language === 'zh') return `调用工具: ${name}`;
+        if (language === 'ja') return `ツール呼び出し: ${name}`;
+        return `Calling Tool: ${name}`;
+    }, [language, name]);
+
+    return (
+        <div className={`
+            my-4 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)] overflow-hidden font-mono text-sm
+            ${isLight ? 'bg-indigo-50/50' : 'bg-indigo-900/20'}
+        `}>
+            {/* Header */}
+            <div className={`
+                flex items-center gap-2 px-3 py-2 border-b-2 border-black
+                ${isLight ? 'bg-indigo-200 text-indigo-900' : 'bg-indigo-900 text-indigo-100'}
+            `}>
+                <Terminal size={14} />
+                <span className="font-bold uppercase">{titleText}</span>
+            </div>
+
+            {/* Content */}
+            <div className="p-3 space-y-2 overflow-x-auto">
+                {error ? (
+                    <div className="text-red-500 text-xs">{error}</div>
+                ) : (
+                    params.length === 0 ? <span className="opacity-50 italic text-xs">No parameters</span> : 
+                    params.map((p, idx) => (
+                        <div key={idx} className="flex flex-col gap-1 text-xs">
+                             <div className="flex items-center gap-2">
+                                 <span className="font-bold text-blue-500">{p.key}</span>
+                                 {/* Render attributes nicely */}
+                                 {Object.entries(p.attrs).map(([k, v]) => (
+                                     <span key={k} className="opacity-70">
+                                         <span className="text-purple-500">{k}</span>=
+                                         <span className="text-green-600">"{v}"</span>
+                                     </span>
+                                 ))}
+                             </div>
+                             {p.value && (
+                                 <div className={`pl-4 border-l-2 ${isLight ? 'border-gray-300' : 'border-gray-700'}`}>
+                                     {p.value}
+                                 </div>
+                             )}
+                        </div>
+                    ))
+                )}
+            </div>
+            
+            {/* Raw XML Toggle (Optional debug view, maybe added later) */}
+        </div>
+    );
+});
+
+const parseMessageContent = (content: string, theme: Theme, language: Language) => {
+    // Regex to split by <thinking> OR <tool_action> blocks
+    // Captures the entire block including tags
+    // The (?:...|$) allows matching unclosed tags at the end of the string (streaming support)
+    const regex = /(<thinking>[\s\S]*?(?:<\/thinking>|$)|<tool_action[\s\S]*?(?:<\/tool_action>|$))/gi;
+    
+    const parts = content.split(regex);
+    
+    return parts.map((part, index) => {
+        if (!part.trim()) return null;
+        
+        // Handle Thinking Block
+        if (part.startsWith('<thinking')) {
+             // Extract inner content for ThinkingBlock
+             const inner = part.replace(/^<thinking>/i, '').replace(/<\/thinking>$/i, '');
+             return <ThinkingBlock key={`think-${index}`} content={inner} theme={theme} language={language} />;
+        }
+        
+        // Handle Tool Action Block
+        // Pass FULL content to let ToolActionBlock parse the XML attributes from the start tag
+        if (part.startsWith('<tool_action')) {
+             return <ToolActionBlock key={`tool-${index}`} content={part} theme={theme} language={language} />;
+        }
+        
+        // Default Markdown
         return (
-            <div className="markdown-body">
-                 <MarkdownRenderer text={content} theme={theme} />
+            <div key={`md-${index}`} className="markdown-body">
+                <MarkdownRenderer text={part} theme={theme} />
             </div>
         );
-    }
-
-    return parts.map((part, index) => {
-        if (index === 0) {
-            // Text before the first <thinking> tag (usually empty, but handle just in case)
-            if (!part.trim()) return null;
-            return (
-              <div key={`text-${index}`} className="markdown-body">
-                  <MarkdownRenderer text={part} theme={theme} />
-              </div>
-            );
-        }
-
-        const closingIndex = part.indexOf('</thinking>');
-        
-        if (closingIndex !== -1) {
-            const thought = part.substring(0, closingIndex);
-            const rest = part.substring(closingIndex + 11); // 11 is length of </thinking>
-            
-            return (
-                <React.Fragment key={`group-${index}`}>
-                    <ThinkingBlock content={thought} theme={theme} language={language} />
-                    {rest.trim() && (
-                        <div className="markdown-body">
-                           <MarkdownRenderer text={rest} theme={theme} />
-                        </div>
-                    )}
-                </React.Fragment>
-            );
-        } else {
-            // Unclosed thinking tag (streaming)
-            return (
-                <ThinkingBlock key={`thinking-${index}`} content={part} theme={theme} language={language} />
-            );
-        }
     });
 };
 
@@ -431,6 +517,7 @@ interface MessageBubbleProps {
 const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, language, styles, isStreaming, isLast }) => {
     // Check if message has thinking content to allow wider bubble
     const hasThinking = useMemo(() => msg.content?.includes('<thinking>'), [msg.content]);
+    const hasTool = useMemo(() => msg.content?.includes('<tool_action'), [msg.content]);
 
     // Detect if content is primarily an HTML document (for Safe Pure Rendering)
     const isHtml = useMemo(() => {
@@ -444,7 +531,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, la
           <div 
             className={`
               p-4 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
-              ${hasThinking || isHtml ? 'max-w-[98%] md:max-w-[95%]' : 'max-w-[90%] md:max-w-[75%]'}
+              ${hasThinking || hasTool || isHtml ? 'max-w-[98%] md:max-w-[95%]' : 'max-w-[90%] md:max-w-[75%]'}
               ${msg.role === 'user' ? styles.primary + ' text-white' : styles.secondary + ' ' + styles.text}
             `}
           >
