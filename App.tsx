@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Theme, LLMProvider, LLMModel, Message, AceConfig, Language, ChatSession } from './types';
 import { INITIAL_ACE_CONFIG, THEME_STYLES, TRANSLATIONS } from './constants';
@@ -5,7 +6,7 @@ import { PixelButton, PixelSelect, PixelCard } from './components/PixelUI';
 import { ModelManager } from './components/ModelManager';
 import { Chat } from './components/Chat';
 import { Mascot } from './components/Mascot';
-import { Settings, Search, ChevronLeft, ChevronRight, Trash2, RefreshCcw, AlertCircle, AlertTriangle } from 'lucide-react';
+import { Settings, Search, ChevronLeft, ChevronRight, Trash2, RefreshCcw, AlertCircle, AlertTriangle, MessageSquare, MessageSquareOff } from 'lucide-react';
 import { ApiClient } from './services/apiClient';
 import { streamChatResponse, fetchMascotComment } from './services/llmService';
 
@@ -41,6 +42,8 @@ const App: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mascotState, setMascotState] = useState<'idle' | 'thinking' | 'happy' | 'shocked'>('idle');
   const [mascotComment, setMascotComment] = useState<string | null>(null);
+  const [isMascotEnabled, setIsMascotEnabled] = useState(true); // Toggle for Mascot speech
+
   const [searchQuery, setSearchQuery] = useState('');
   
   // Easter Egg States
@@ -151,6 +154,9 @@ const App: React.FC = () => {
   // Dynamic Mascot Commentary Logic (Bound to simple-stream)
   useEffect(() => {
     if (messages.length === 0) return;
+    
+    // Check if mascot is enabled
+    if (!isMascotEnabled) return;
 
     // 30% chance to trigger a comment when messages update
     // Ensure we have an active model to use for generation
@@ -168,7 +174,7 @@ const App: React.FC = () => {
         };
         fetchComment();
     }
-  }, [messages.length, activeModel]);
+  }, [messages.length, activeModel, isMascotEnabled]);
 
   // Handle mascot speech end with useCallback to prevent re-renders breaking the effect
   const handleMascotSpeechEnd = useCallback(() => {
@@ -457,7 +463,7 @@ const App: React.FC = () => {
         </div>
 
         {/* Mascot Area (Bottom of Sidebar) */}
-        <div className="p-2 flex justify-center items-end pb-8">
+        <div className="p-2 pb-8 flex items-end justify-center relative">
             <Mascot 
                 theme={theme} 
                 state={mascotState} 
@@ -465,6 +471,19 @@ const App: React.FC = () => {
                 speechText={mascotComment}
                 onSpeechEnd={handleMascotSpeechEnd}
             />
+            
+            {/* Mascot Toggle Button */}
+            <button 
+                onClick={() => setIsMascotEnabled(!isMascotEnabled)}
+                className={`
+                    absolute bottom-4 right-4 p-1.5 rounded-sm border-2 border-black shadow-[2px_2px_0px_rgba(0,0,0,1)]
+                    transition-all active:translate-y-0.5 active:shadow-none
+                    ${isMascotEnabled ? 'bg-green-400 text-black' : 'bg-gray-400 text-gray-700'}
+                `}
+                title={isMascotEnabled ? "Mascot Speech: ON" : "Mascot Speech: OFF"}
+            >
+                {isMascotEnabled ? <MessageSquare size={14} /> : <MessageSquareOff size={14} />}
+            </button>
         </div>
       </div>
 
