@@ -1,5 +1,7 @@
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+
+
+import React, { useState, useEffect, useRef, useMemo, useLayoutEffect } from 'react';
 import { Theme, Message, LLMModel, LLMProvider, Language } from '../types';
 import { PixelButton, PixelBadge } from './PixelUI';
 import { streamChatResponse } from '../services/llmService';
@@ -399,7 +401,7 @@ const ToolDetails: React.FC<{ content: string; theme: Theme; language: Language;
     }, [content]);
 
     return (
-        <div className={`p-2 border-l-2 ${isLight ? 'border-indigo-200' : 'border-indigo-800'}`}>
+        <div className={`p-2 border-l-2 ${isLight ? 'border-gray-300' : 'border-gray-600'} ml-1`}>
             <div className="text-[10px] uppercase font-bold opacity-50 mb-1">Call #{index + 1}</div>
             <div className="space-y-2 overflow-x-auto">
                 {error ? <div className="text-red-500 text-xs">{error}</div> : 
@@ -416,7 +418,7 @@ const ToolDetails: React.FC<{ content: string; theme: Theme; language: Language;
                              ))}
                          </div>
                          {p.value && (
-                             <div className={`pl-4 border-l-2 ${isLight ? 'border-gray-300' : 'border-gray-700'}`}>
+                             <div className={`pl-4 border-l-2 ${isLight ? 'border-gray-200' : 'border-gray-700'}`}>
                                  {p.value}
                              </div>
                          )}
@@ -447,70 +449,47 @@ const ToolActionBlock: React.FC<{
         return { label, isRunning };
     }, [state, language]);
 
-    // Localization for title
-    const titleText = useMemo(() => {
-        if (language === 'zh') return `执行工具: ${name}`;
-        if (language === 'ja') return `ツール実行: ${name}`;
-        return `Executing Tool: ${name}`;
-    }, [language, name]);
-
+    // Simplified design: less padding, thinner borders, transparent/light background
     return (
         <div className={`
-            my-2 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)] overflow-hidden font-mono text-sm
-            transition-all duration-200
-            ${isLight ? 'bg-indigo-50' : 'bg-[#1a1b26]'}
+            my-1 border-l-2 font-mono text-xs overflow-hidden transition-all duration-200 rounded-r-sm
+            ${isLight ? 'border-gray-400 bg-gray-50 hover:bg-gray-100' : 'border-gray-500 bg-white/5 hover:bg-white/10'}
         `}>
-           {/* Header Bar */}
+           {/* Minimal Header */}
            <div 
              onClick={() => setIsExpanded(!isExpanded)}
-             className={`
-                flex items-center justify-between px-3 py-2 cursor-pointer select-none
-                ${isLight ? 'hover:bg-indigo-100' : 'hover:bg-white/5'}
-             `}
+             className="flex items-center justify-between px-2 py-1.5 cursor-pointer select-none"
            >
-              <div className="flex items-center gap-3">
-                 {/* Dynamic Spinner / Status Icon */}
-                 <div className="relative w-5 h-5 flex items-center justify-center">
+              <div className="flex items-center gap-2 opacity-80">
+                 <div className="relative w-3 h-3 flex items-center justify-center">
                     {isRunning ? (
-                        <div className={`absolute inset-0 border-2 border-dashed rounded-full animate-[spin_3s_linear_infinite] ${isLight ? 'border-indigo-600' : 'border-indigo-400'}`}></div>
+                        <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></div>
                     ) : (
-                        <div className={`absolute inset-0 border-2 rounded-full ${isLight ? 'border-green-600' : 'border-green-400'} opacity-50`}></div>
-                    )}
-                    
-                    {isRunning ? (
-                        <Terminal size={12} className={isLight ? 'text-indigo-600' : 'text-indigo-400'} />
-                    ) : (
-                        <Check size={12} className={isLight ? 'text-green-600' : 'text-green-400'} />
+                        <Terminal size={12} className={isLight ? 'text-gray-600' : 'text-gray-400'} />
                     )}
                  </div>
                  
-                 <div className="flex flex-col">
-                    <span className="font-bold uppercase tracking-wide leading-none">{titleText}</span>
-                    <span className={`text-[10px] opacity-60 flex items-center gap-1 mt-0.5 ${!isRunning && 'text-green-500 font-bold'}`}>
-                       {isRunning && <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>}
-                       {label}
+                 <div className="flex items-baseline gap-2">
+                    <span className="font-bold opacity-70">
+                        &gt; {name}
+                    </span>
+                    <span className={`text-[10px] ${isRunning ? 'text-blue-500' : 'opacity-40'}`}>
+                       {isRunning ? '...' : ''}
                     </span>
                  </div>
               </div>
 
-              {/* Count Indicator */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 opacity-50">
                  {count > 1 && (
-                     <div key={count} className="animate-bounce">
-                        <PixelBadge theme={theme} color="bg-yellow-400 text-black">
-                           ×{count}
-                        </PixelBadge>
-                     </div>
+                     <span className="text-[10px] font-bold">x{count}</span>
                  )}
-                 <div className="opacity-50">
-                    {isExpanded ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}
-                 </div>
+                 {isExpanded ? <ChevronDown size={12}/> : <ChevronRight size={12}/>}
               </div>
            </div>
 
-           {/* Expanded Params (Hidden by default) */}
+           {/* Expanded Params */}
            {isExpanded && (
-               <div className={`border-t-2 border-black/10 p-2 space-y-2 ${isLight ? 'bg-white' : 'bg-black/20'}`}>
+               <div className={`p-2 space-y-2 border-t border-dashed ${isLight ? 'border-gray-200' : 'border-gray-700'}`}>
                    {rawContents.map((content, idx) => (
                        <ToolDetails key={idx} content={content} index={idx} theme={theme} language={language} />
                    ))}
@@ -681,6 +660,9 @@ export const Chat: React.FC<ChatProps> = ({
   const themeRef = useRef<HTMLDivElement>(null);
   const langRef = useRef<HTMLDivElement>(null);
   
+  // Auto-scroll logic refs
+  const shouldAutoScrollRef = useRef(true); 
+
   const styles = THEME_STYLES[theme];
   const t = TRANSLATIONS[language];
 
@@ -709,11 +691,26 @@ export const Chat: React.FC<ChatProps> = ({
     );
   }, [messages, searchQuery]);
 
-  useEffect(() => {
-    if (scrollRef.current && !searchQuery) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages, searchQuery]);
+  // Smart Auto-scroll Implementation
+  // 1. Detect user scroll behavior
+  const handleScroll = () => {
+      if (!scrollRef.current) return;
+      const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+      
+      // If the user is close to the bottom (within 100px), enable auto-scroll.
+      // Otherwise, assume they are reading history and disable it.
+      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+      const isNearBottom = distanceFromBottom < 100;
+      
+      shouldAutoScrollRef.current = isNearBottom;
+  };
+
+  // 2. Apply scroll on messages change IF enabled
+  useLayoutEffect(() => {
+      if (scrollRef.current && shouldAutoScrollRef.current && !searchQuery) {
+          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      }
+  }, [messages, searchQuery]); // Re-run when messages update
 
   const handleSend = async () => {
     if (input.trim() === '/upup downdown left right') {
@@ -723,6 +720,9 @@ export const Chat: React.FC<ChatProps> = ({
     }
 
     if (!input.trim() || !activeModel || !provider || isStreaming) return;
+
+    // Reset auto-scroll to true when sending a new message
+    shouldAutoScrollRef.current = true;
 
     const userMsg: Message = {
       id: Date.now().toString(),
@@ -780,7 +780,11 @@ export const Chat: React.FC<ChatProps> = ({
   return (
     <div className="flex flex-col h-full relative z-10">
       
-      <div className="flex-1 overflow-y-auto p-4 space-y-6 relative z-10" ref={scrollRef}>
+      <div 
+        className="flex-1 overflow-y-auto p-4 space-y-6 relative z-10" 
+        ref={scrollRef}
+        onScroll={handleScroll}
+      >
         {messages.length === 0 ? (
            <div className={`flex flex-col items-center justify-center h-full opacity-50 select-none ${styles.text}`}>
              <div className="text-6xl mb-4 animate-bounce">🎮</div>
