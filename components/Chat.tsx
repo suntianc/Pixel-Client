@@ -158,17 +158,17 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
             remarkPlugins={[remarkGfm, remarkMath]}
             rehypePlugins={[rehypeKatex, rehypeRaw]}
             components={{
-                style: () => null,
-                script: () => null,
-                link: () => null,
-                meta: () => null,
-                head: () => null,
-                iframe: () => null, 
-                object: () => null,
-                embed: () => null,
-                form: () => null,
-                html: ({children}: any) => <>{children}</>, 
-                body: ({children}: any) => <>{children}</>,
+                style: () => <></>,
+                script: () => <></>,
+                link: () => <></>,
+                meta: () => <></>,
+                head: () => <></>,
+                iframe: () => <></>, 
+                object: () => <></>,
+                embed: () => <></>,
+                form: () => <></>,
+                html: ({children}: {children?: React.ReactNode}) => <>{children}</>, 
+                body: ({children}: {children?: React.ReactNode}) => <>{children}</>,
 
                 video: ({node, src, ...props}: any) => (
                      <MediaFrame theme={theme} label="Video Feed" icon={<Play size={14} />}>
@@ -242,7 +242,6 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
                                         lineHeight: '1.4',
                                         background: '#1e1e1e' 
                                     }}
-                                    {...props}
                                 >
                                     {String(children).replace(/\n$/, '')}
                                 </SyntaxHighlighter>
@@ -392,7 +391,7 @@ const ToolActionBlock: React.FC<{
                  
                  <div className="flex items-baseline gap-2">
                     <span className="font-bold opacity-70">
-                        &gt; {name}
+                        {name}
                     </span>
                     <span className={`text-[10px] ${isRunning ? 'text-blue-500' : 'opacity-40'}`}>
                        {isRunning ? '...' : ''}
@@ -500,12 +499,16 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, la
         return /^\s*<!DOCTYPE html>/i.test(trimmed) || /^\s*<html/i.test(trimmed);
     }, [msg.content]);
 
+    // Force standard width for user messages since they are plain text
+    // Only expand width for assistant messages that contain complex UI elements
+    const isWide = msg.role !== 'user' && (hasThinking || hasTool || isHtml);
+
     return (
         <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
           <div 
             className={`
               p-4 ${styles.borderWidth} ${styles.borderColor} ${styles.shadow} ${styles.radius} ${bubbleShape}
-              ${hasThinking || hasTool || isHtml ? 'max-w-[98%] md:max-w-[95%]' : 'max-w-[90%] md:max-w-[75%]'}
+              ${isWide ? 'max-w-[98%] md:max-w-[95%]' : 'max-w-[90%] md:max-w-[75%]'}
               ${bubbleColor}
             `}
           >
@@ -518,19 +521,23 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, la
               )}
             </div>
             <div className={`leading-relaxed text-sm ${styles.font}`}>
-              {msg.content ? (
-                  isHtml ? (
-                      <HtmlPreviewBlock code={msg.content} theme={theme} defaultPreview={true} />
-                  ) : (
-                      parseMessageContent(msg.content, theme, language, isStreaming && isLast)
-                  )
+              {msg.role === 'user' ? (
+                  <div className="whitespace-pre-wrap break-words">{msg.content}</div>
               ) : (
-                  <div className="flex items-center gap-2 py-2 opacity-70">
-                      <Loader2 size={16} className="animate-spin" />
-                      <span className="animate-pulse">Thinking...</span>
-                  </div>
+                  msg.content ? (
+                      isHtml ? (
+                          <HtmlPreviewBlock code={msg.content} theme={theme} defaultPreview={true} />
+                      ) : (
+                          parseMessageContent(msg.content, theme, language, isStreaming && isLast)
+                      )
+                  ) : (
+                      <div className="flex items-center gap-2 py-2 opacity-70">
+                          <Loader2 size={16} className="animate-spin" />
+                          <span className="animate-pulse">Thinking...</span>
+                      </div>
+                  )
               )}
-              {isStreaming && isLast && msg.content && (
+              {isStreaming && isLast && msg.content && msg.role !== 'user' && (
                   <span className="inline-block w-2 h-4 bg-current ml-1 animate-cursor align-middle"></span>
               )}
             </div>
