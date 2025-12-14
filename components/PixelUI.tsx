@@ -1,7 +1,8 @@
 
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Theme } from '../types';
 import { THEME_STYLES } from '../constants';
+import { ChevronDown } from 'lucide-react';
 
 interface PixelButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   theme: Theme;
@@ -103,27 +104,121 @@ export const PixelInput: React.FC<PixelInputProps> = ({ theme, label, className 
   );
 };
 
-interface PixelSelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
+interface PixelSelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'onChange'> {
   theme: Theme;
   label?: string;
+  onChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
 }
 
-export const PixelSelect: React.FC<PixelSelectProps> = ({ theme, label, children, className = '', ...props }) => {
+export const PixelSelect: React.FC<PixelSelectProps> = ({ theme, label, children, className = '', value, onChange, disabled, ...props }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
     const styles = THEME_STYLES[theme];
+
+    // Extract options from React children
+    const options = React.Children.map(children, (child) => {
+        if (React.isValidElement(child) && child.type === 'option') {
+            const props = child.props as React.OptionHTMLAttributes<HTMLOptionElement>;
+            return {
+                value: props.value,
+                label: props.children,
+                disabled: props.disabled
+            };
+        }
+        return null;
+    })?.filter(Boolean) || [];
+
+    const selectedOption = options.find(o => o.value === value);
+
+    // Handle click outside to close dropdown
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleSelect = (val: string | number | readonly string[]) => {
+        if (onChange) {
+            // Create a synthetic event to mimic standard Select onChange
+            const event = {
+                target: { value: val, name: props.name },
+                currentTarget: { value: val, name: props.name },
+                preventDefault: () => {},
+                stopPropagation: () => {},
+                nativeEvent: new Event('change'),
+                bubbles: true,
+                cancelable: true,
+                type: 'change'
+            } as unknown as React.ChangeEvent<HTMLSelectElement>;
+            
+            onChange(event);
+        }
+        setIsOpen(false);
+    };
+
     return (
-        <div className="flex flex-col gap-1 w-full">
+        <div className={`flex flex-col gap-1 w-full ${className}`} ref={containerRef}>
             {label && <label className={`text-xs font-bold uppercase ${styles.textMuted}`}>{label}</label>}
-            <select
-                className={`
-                    w-full p-2 outline-none
-                    ${styles.borderWidth} ${styles.borderColor} ${styles.radius}
-                    ${styles.inputBg} ${styles.text}
-                    cursor-pointer
-                    focus:border-blue-400
-                    ${className}
-                `}
-                {...props}
-            >
+            <div className="relative">
+                {/* Trigger Area */}
+                <div
+                    onClick={() => !disabled && setIsOpen(!isOpen)}
+                    className={`
+                        w-full p-2 pr-8 flex items-center justify-between
+                        ${styles.borderWidth} ${styles.borderColor} ${styles.radius}
+                        ${styles.inputBg} ${styles.text}
+                        ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                        ${isOpen ? 'border-blue-400' : ''}
+                        select-none transition-colors duration-150
+                    `}
+                >
+                    <span className="truncate block">{selectedOption?.label || value || "Select..."}</span>
+                    <div className={`
+                        absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none 
+                        flex items-center justify-center opacity-70
+                        ${styles.text}
+                    `}>
+                        <ChevronDown size={16} className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                    </div>
+                </div>
+
+                {/* Custom Dropdown Menu */}
+                {isOpen && !disabled && (
+                    <div className={`
+                        absolute top-full left-0 w-full mt-1 z-[100]
+                        max-h-60 overflow-y-auto
+                        ${styles.borderWidth} ${styles.borderColor} ${styles.radius}
+                        ${styles.inputBg} ${styles.text}
+                        ${styles.shadow === 'pixel-shadow' ? 'shadow-[4px_4px_0px_black]' : 'shadow-xl'}
+                    `}>
+                        {options.map((option, idx) => (
+                            <div
+                                key={`${option.value}-${idx}`}
+                                onClick={() => !option.disabled && handleSelect(option.value as any)}
+                                className={`
+                                    p-2 cursor-pointer text-sm
+                                    border-b last:border-b-0 border-white/5
+                                    hover:bg-black/10 transition-colors
+                                    ${option.value === value ? 'bg-blue-500/20 font-bold' : ''}
+                                    ${option.disabled ? 'opacity-50 cursor-not-allowed' : ''}
+                                `}
+                            >
+                                {option.label}
+                            </div>
+                        ))}
+                        {options.length === 0 && (
+                            <div className="p-2 text-sm opacity-50 italic">No options</div>
+                        )}
+                    </div>
+                )}
+            </div>
+            
+            {/* Hidden native select for form data/accessibility fallback */}
+            <select className="hidden" value={value} onChange={onChange} disabled={disabled} {...props}>
                 {children}
             </select>
         </div>
