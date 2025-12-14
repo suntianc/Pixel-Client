@@ -167,8 +167,8 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
                 object: () => <></>,
                 embed: () => <></>,
                 form: () => <></>,
-                html: (props: any) => <>{props.children}</>, 
-                body: (props: any) => <>{props.children}</>,
+                html: (props: any) => <>{props.children as React.ReactNode}</>, 
+                body: (props: any) => <>{props.children as React.ReactNode}</>,
 
                 video: ({node, src, ...props}: any) => (
                      <MediaFrame theme={theme} label="Video Feed" icon={<Play size={14} />}>
@@ -251,7 +251,7 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
                     
                     return <code className={className} {...props}>{children}</code>;
                 }
-            }}
+            } as any}
         >
             {text}
         </ReactMarkdown>
