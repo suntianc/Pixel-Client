@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect, useRef, useMemo, useLayoutEffect } from 'react';
 import { Theme, Message, LLMModel, LLMProvider, Language } from '../types';
 import { PixelButton } from './PixelUI';
@@ -140,11 +139,15 @@ const HtmlPreviewBlock: React.FC<HtmlPreviewBlockProps> = ({ code, theme, defaul
 
 const getMediaType = (url: string) => {
     if (!url) return 'link';
-    const cleanUrl = url.split('?')[0].toLowerCase();
+    // Robustly handle query params and hash for extension detection
+    const cleanUrl = url.split('?')[0].split('#')[0].toLowerCase();
+    
     if (cleanUrl.match(/\.(mp4|webm|mov|mkv)$/)) return 'video';
     if (cleanUrl.match(/\.(mp3|wav|ogg|m4a)$/)) return 'audio';
     if (cleanUrl.match(/\.(glb|gltf)$/)) return 'model';
     if (cleanUrl.match(/\.html?$/)) return 'html';
+    // Added image extensions support for auto-rendering
+    if (cleanUrl.match(/\.(jpeg|jpg|png|gif|webp|svg|bmp|ico|tiff)$/)) return 'image';
     return 'link';
 };
 
@@ -169,7 +172,10 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
                 form: () => null,
                 html: ({ children }: { children?: React.ReactNode }) => <>{children}</>, 
                 body: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
-
+                
+                // Ensure Paragraphs Wrap
+                p: ({children}: any) => <p className="mb-2 break-words whitespace-pre-wrap">{children}</p>,
+                
                 video: ({node, src, ...props}: any) => (
                      <MediaFrame theme={theme} label="Video Feed" icon={<Play size={14} />}>
                         <video controls className="w-full max-h-[400px]" src={src as string} {...props} />
@@ -196,6 +202,18 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
                     }
                     if (type === 'html') return <MediaFrame theme={theme} label="WEB PREVIEW" icon={<Globe size={14} />}><iframe src={url} className="w-full h-[400px] border-none bg-white" sandbox="allow-scripts" title="Web Preview"/></MediaFrame>;
                     
+                    // Render Image if detected as an image link
+                    if (type === 'image') {
+                        return (
+                            <div className={`my-2 inline-block relative group rounded overflow-hidden border border-white/10`} title={url}>
+                                <img src={url} alt="Preview" className={`max-w-full h-auto max-h-[500px] object-contain ${styles.shadow}`} loading="lazy" />
+                                <a href={url} target="_blank" rel="noopener noreferrer" className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded hover:bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Maximize size={12} />
+                                </a>
+                            </div>
+                        );
+                    }
+
                     return <a href={href as string} className="text-blue-500 hover:text-blue-400 underline break-all" target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
                 },
                 img: ({node, src, alt, ...props}: any) => {
@@ -287,7 +305,7 @@ const ThinkingBlock: React.FC<{ content: string; theme: Theme; language: Languag
             {isOpen && (
                 <div className={`
                     p-3 text-xs border-t border-dashed ${styles.borderColor} border-opacity-30
-                    markdown-body
+                    markdown-body break-words overflow-x-auto
                 `}>
                    <MarkdownRenderer text={content} theme={theme} />
                 </div>
@@ -462,7 +480,7 @@ const parseMessageContent = (content: string, theme: Theme, language: Language, 
                 renderedNodes.push(<ThinkingBlock key={`think-${index}`} content={inner} theme={theme} language={language} />);
             } else {
                 renderedNodes.push(
-                    <div key={`md-${index}`} className="markdown-body">
+                    <div key={`md-${index}`} className="markdown-body break-words w-full overflow-x-auto">
                         <MarkdownRenderer text={part} theme={theme} />
                     </div>
                 );
@@ -512,6 +530,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, la
               p-4 ${styles.borderWidth} ${styles.borderColor} ${styles.shadow} ${styles.radius} ${bubbleShape}
               ${isWide ? 'max-w-[98%] md:max-w-[95%]' : 'max-w-[90%] md:max-w-[75%]'}
               ${bubbleColor}
+              overflow-hidden min-w-0
             `}
           >
             <div className="flex justify-between items-center mb-2 gap-2 opacity-80">
@@ -534,7 +553,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, la
                 </div>
             )}
 
-            <div className={`leading-relaxed text-sm ${styles.font}`}>
+            <div className={`leading-relaxed text-sm ${styles.font} break-words min-w-0`}>
               {msg.role === 'user' ? (
                   <div className="whitespace-pre-wrap break-all">{msg.content}</div>
               ) : (
@@ -559,8 +578,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, la
         </div>
     );
 });
-
-// ... (Chat component shell logic largely same, but using styles from THEME_STYLES) ...
 
 export const Chat: React.FC<ChatProps> = ({ 
   theme, language, messages, activeModel, provider,
