@@ -188,8 +188,14 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
                     const url = (typeof href === 'string' ? href : undefined) || '';
                     const type = getMediaType(url);
 
+                    // 调试信息
+                    if (url.includes('.png') || url.includes('.jpg') || url.includes('.jpeg')) {
+                        console.log('🔍 检测到图片链接:', { url, type });
+                    }
+
                     // 图片类型直接渲染为图片
                     if (type === 'image') {
+                        console.log('✅ 渲染为图片:', url);
                         const styles = THEME_STYLES[theme];
                         const altText = typeof children === 'string' ? children : 'Image';
                         return (
