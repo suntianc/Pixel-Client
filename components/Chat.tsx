@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect, useRef, useMemo, useLayoutEffect } from 'react';
 import { Theme, Message, LLMModel, LLMProvider, Language } from '../types';
 import { PixelButton } from './PixelUI';
@@ -163,13 +162,13 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
                 link: () => null,
                 meta: () => null,
                 head: () => null,
-                iframe: () => null, 
+                iframe: () => null,
                 object: () => null,
                 embed: () => null,
                 form: () => null,
-                html: ({ children }: { children?: React.ReactNode }) => <>{children}</>, 
+                html: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
                 body: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
-
+                
                 video: ({node, src, ...props}: any) => (
                      <MediaFrame theme={theme} label="Video Feed" icon={<Play size={14} />}>
                         <video controls className="w-full max-h-[400px]" src={src as string} {...props} />
@@ -559,8 +558,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, la
         </div>
     );
 });
-
-// ... (Chat component shell logic largely same, but using styles from THEME_STYLES) ...
 
 export const Chat: React.FC<ChatProps> = ({ 
   theme, language, messages, activeModel, provider,
