@@ -141,10 +141,6 @@ const HtmlPreviewBlock: React.FC<HtmlPreviewBlockProps> = ({ code, theme, defaul
 const getMediaType = (url: string) => {
     if (!url) return 'link';
     const cleanUrl = url.split('?')[0].toLowerCase();
-
-    // 图片格式检查
-    if (cleanUrl.match(/\.(png|jpe?g|gif|webp|bmp|svg)$/)) return 'image';
-
     if (cleanUrl.match(/\.(mp4|webm|mov|mkv)$/)) return 'video';
     if (cleanUrl.match(/\.(mp3|wav|ogg|m4a)$/)) return 'audio';
     if (cleanUrl.match(/\.(glb|gltf)$/)) return 'model';
@@ -187,24 +183,6 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
                 a: ({node, href, children, ...props}: any) => {
                     const url = (typeof href === 'string' ? href : undefined) || '';
                     const type = getMediaType(url);
-
-                    // 调试信息
-                    if (url.includes('.png') || url.includes('.jpg') || url.includes('.jpeg')) {
-                        console.log('🔍 检测到图片链接:', { url, type });
-                    }
-
-                    // 图片类型直接渲染为图片
-                    if (type === 'image') {
-                        console.log('✅ 渲染为图片:', url);
-                        const styles = THEME_STYLES[theme];
-                        const altText = typeof children === 'string' ? children : 'Image';
-                        return (
-                            <div className={`my-2 inline-block relative group rounded overflow-hidden`}>
-                                <img src={url} alt={altText} className={`max-w-full h-auto ${styles.shadow}`} loading="lazy" />
-                                {altText && altText !== url && <div className="absolute bottom-0 left-0 bg-black/70 text-white text-[10px] px-1 py-0.5 max-w-full truncate">{altText}</div>}
-                            </div>
-                        );
-                    }
 
                     if (type === 'video') return <MediaFrame theme={theme} label="Video Feed" icon={<Play size={14} />}><video controls className="w-full max-h-[400px]" src={url} /></MediaFrame>;
                     if (type === 'audio') return <MediaFrame theme={theme} label="Audio Log" icon={<Play size={14} />}><audio controls className="w-full" src={url} /></MediaFrame>;
