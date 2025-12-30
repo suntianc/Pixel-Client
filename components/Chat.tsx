@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useMemo, useLayoutEffect } from 're
 import { Theme, Message, LLMModel, LLMProvider, Language } from '../types';
 import { PixelButton } from './PixelUI';
 import { THEME_STYLES, TRANSLATIONS } from '../constants';
-import { Send, Copy, Check, Moon, Sun, Star, Cpu, Globe, Palette, Loader2, Brain, ChevronDown, ChevronRight, BrainCircuit, Play, Maximize, FileCode, Box, Terminal, Laptop, Coffee, Zap, Paperclip, X } from 'lucide-react';
+import { Send, Copy, Check, Moon, Sun, Star, Cpu, Globe, Palette, Loader2, Brain, ChevronDown, ChevronRight, BrainCircuit, Play, Maximize, FileCode, Box, Terminal, Laptop, Coffee, Zap, Paperclip, X, AlertCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -139,11 +139,12 @@ const HtmlPreviewBlock: React.FC<HtmlPreviewBlockProps> = ({ code, theme, defaul
 
 const getMediaType = (url: string) => {
     if (!url) return 'link';
-    const cleanUrl = url.split('?')[0].toLowerCase();
+    const cleanUrl = url.split('?')[0].split('#')[0].toLowerCase();
     if (cleanUrl.match(/\.(mp4|webm|mov|mkv)$/)) return 'video';
     if (cleanUrl.match(/\.(mp3|wav|ogg|m4a)$/)) return 'audio';
     if (cleanUrl.match(/\.(glb|gltf)$/)) return 'model';
     if (cleanUrl.match(/\.html?$/)) return 'html';
+    if (cleanUrl.match(/\.(jpeg|jpg|png|gif|webp|svg|bmp|ico|tiff)$/)) return 'image';
     return 'link';
 };
 
@@ -168,7 +169,7 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
                 form: () => null,
                 html: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
                 body: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
-                
+                p: ({children}: any) => <p className="mb-2 break-words whitespace-pre-wrap">{children}</p>,
                 video: ({node, src, ...props}: any) => (
                      <MediaFrame theme={theme} label="Video Feed" icon={<Play size={14} />}>
                         <video controls className="w-full max-h-[400px]" src={src as string} {...props} />
@@ -194,6 +195,16 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
                         );
                     }
                     if (type === 'html') return <MediaFrame theme={theme} label="WEB PREVIEW" icon={<Globe size={14} />}><iframe src={url} className="w-full h-[400px] border-none bg-white" sandbox="allow-scripts" title="Web Preview"/></MediaFrame>;
+                    if (type === 'image') {
+                        return (
+                            <div className={`my-2 inline-block relative group rounded overflow-hidden border border-white/10`} title={url}>
+                                <img src={url} alt="Preview" className={`max-w-full h-auto max-h-[500px] object-contain ${styles.shadow}`} loading="lazy" />
+                                <a href={url} target="_blank" rel="noopener noreferrer" className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded hover:bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Maximize size={12} />
+                                </a>
+                            </div>
+                        );
+                    }
 
                     return <a href={href as string} className="text-blue-500 hover:text-blue-400 underline break-all" target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
                 },
@@ -298,7 +309,6 @@ const ThinkingBlock: React.FC<{ content: string; theme: Theme; language: Languag
 const ToolDetails: React.FC<{ content: string; theme: Theme; language: Language; index: number }> = React.memo(({ content, theme, language, index }) => {
     const styles = THEME_STYLES[theme];
     
-    // ... (parsing logic same as before) ...
      const { params, error } = useMemo(() => {
         try {
             let safeContent = content;
@@ -358,24 +368,51 @@ const ToolActionBlock: React.FC<{
     rawContents: string[]; 
     theme: Theme; 
     language?: Language;
-    state: 'running' | 'completed';
+    state: 'running' | 'success' | 'failed';
 }> = React.memo(({ name, count, rawContents, theme, language = 'en', state }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const styles = THEME_STYLES[theme];
 
-    const { label, isRunning } = useMemo(() => {
+    const { label, colorClass, iconColor, isRunning } = useMemo(() => {
         const isRunning = state === 'running';
+        const isFailed = state === 'failed';
+        const isSuccess = state === 'success';
+
+        let colorClass = 'border-opacity-50';
+        let iconColor = styles.text;
+
+        if (isRunning) {
+            colorClass = 'border-blue-500 border-opacity-70';
+            iconColor = 'text-blue-500';
+        } else if (isFailed) {
+            colorClass = 'border-red-500 border-opacity-70';
+            iconColor = 'text-red-500';
+        } else if (isSuccess) {
+            colorClass = 'border-green-500 border-opacity-70';
+            iconColor = 'text-green-500';
+        }
+
         let label = '';
-        if (language === 'zh') label = isRunning ? '运行中...' : '已执行';
-        else if (language === 'ja') label = isRunning ? '実行中...' : '完了';
-        else label = isRunning ? 'Running...' : 'Executed';
-        return { label, isRunning };
-    }, [state, language]);
+        if (language === 'zh') {
+            if (isRunning) label = '运行中...';
+            else if (isFailed) label = '执行失败';
+            else label = '执行成功';
+        } else if (language === 'ja') {
+            if (isRunning) label = '実行中...';
+            else if (isFailed) label = '失敗';
+            else label = '成功';
+        } else {
+            if (isRunning) label = 'Running...';
+            else if (isFailed) label = 'Failed';
+            else label = 'Success';
+        }
+        return { label, colorClass, iconColor, isRunning };
+    }, [state, language, styles.text]);
 
     return (
         <div className={`
             my-1 border-l-2 font-mono text-xs overflow-hidden transition-all duration-200 ${styles.radius}
-            ${styles.secondary} bg-opacity-20 ${styles.borderColor} border-opacity-50
+            ${styles.secondary} bg-opacity-20 ${colorClass}
         `}>
            <div 
              onClick={() => setIsExpanded(!isExpanded)}
@@ -385,17 +422,19 @@ const ToolActionBlock: React.FC<{
                  <div className="relative w-3 h-3 flex items-center justify-center">
                     {isRunning ? (
                         <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></div>
+                    ) : state === 'failed' ? (
+                        <AlertCircle size={12} className="text-red-500" />
                     ) : (
-                        <Terminal size={12} className={styles.text} />
+                        <Terminal size={12} className={iconColor} />
                     )}
                  </div>
                  
                  <div className="flex items-baseline gap-2">
-                    <span className="font-bold opacity-70">
+                    <span className={`font-bold ${isRunning ? 'text-blue-500' : state === 'failed' ? 'text-red-500' : 'text-green-500'}`}>
                         {name}
                     </span>
-                    <span className={`text-[10px] ${isRunning ? 'text-blue-500' : 'opacity-40'}`}>
-                       {isRunning ? '...' : ''}
+                    <span className={`text-[10px] opacity-60`}>
+                       {label}
                     </span>
                  </div>
               </div>
@@ -419,7 +458,6 @@ const ToolActionBlock: React.FC<{
     );
 });
 
-// ... (parseMessageContent remains the same) ...
 const parseMessageContent = (content: string, theme: Theme, language: Language, isStreamingMessage: boolean) => {
     const regex = /(<thinking>[\s\S]*?(?:<\/thinking>|$)|<tool_action[\s\S]*?(?:<\/tool_action>|$))/gi;
     const parts = content.split(regex);
@@ -429,7 +467,15 @@ const parseMessageContent = (content: string, theme: Theme, language: Language, 
 
     const flushTools = (isFinal: boolean) => {
         if (pendingTools.length > 0) {
-            const state = (isFinal && isStreamingMessage) ? 'running' : 'completed';
+            const isFailed = pendingTools.some(t => t.toLowerCase().includes('error') || t.toLowerCase().includes('fail'));
+            let state: 'running' | 'success' | 'failed' = 'success';
+            
+            if (isFinal && isStreamingMessage) {
+                state = 'running';
+            } else if (isFailed) {
+                state = 'failed';
+            }
+
             renderedNodes.push(
                 <ToolActionBlock 
                     key={`tool-group-${renderedNodes.length}`} 
@@ -484,7 +530,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, la
     const styles = THEME_STYLES[theme];
     const isModern = styles.type === 'modern';
     
-    // Bubble shape logic
     const bubbleShape = msg.role === 'user' 
         ? (isModern ? 'rounded-2xl rounded-tr-sm' : '') 
         : (isModern ? 'rounded-2xl rounded-tl-sm' : '');
@@ -500,8 +545,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, la
         return /^\s*<!DOCTYPE html>/i.test(trimmed) || /^\s*<html/i.test(trimmed);
     }, [msg.content]);
 
-    // Force standard width for user messages since they are plain text
-    // Only expand width for assistant messages that contain complex UI elements
     const isWide = msg.role !== 'user' && (hasThinking || hasTool || isHtml);
 
     return (
@@ -522,7 +565,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, la
               )}
             </div>
             
-            {/* Display Images for User Messages */}
             {msg.role === 'user' && msg.images && msg.images.length > 0 && (
                 <div className="flex flex-col gap-2 mb-2">
                     {msg.images.map((img, idx) => (
@@ -570,11 +612,8 @@ export const Chat: React.FC<ChatProps> = ({
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [showLangMenu, setShowLangMenu] = useState(false);
   const [isDeepThinkingEnabled, setIsDeepThinkingEnabled] = useState(false);
-  
-  // Image Upload State
   const [pendingImages, setPendingImages] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
   const isStreaming = externalIsStreaming || localIsStreaming;
   const scrollRef = useRef<HTMLDivElement>(null);
   const themeRef = useRef<HTMLDivElement>(null);
@@ -585,7 +624,6 @@ export const Chat: React.FC<ChatProps> = ({
   const t = TRANSLATIONS[language];
   const isMultimodal = activeModel?.type === 'multimodal';
 
-  // ... (Effect hooks same as before) ...
   useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
           if (showThemeMenu && themeRef.current && !themeRef.current.contains(event.target as Node)) {
@@ -595,7 +633,6 @@ export const Chat: React.FC<ChatProps> = ({
               setShowLangMenu(false);
           }
       };
-
       document.addEventListener('mousedown', handleClickOutside);
       return () => {
           document.removeEventListener('mousedown', handleClickOutside);
@@ -624,11 +661,9 @@ export const Chat: React.FC<ChatProps> = ({
       }
   }, [messages, searchQuery]);
 
-  // Image Handling Functions
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
       if (e.target.files && e.target.files.length > 0) {
           processFiles(Array.from(e.target.files));
-          // Reset input so same file can be selected again if needed
           e.target.value = '';
       }
   };
@@ -673,10 +708,7 @@ export const Chat: React.FC<ChatProps> = ({
         setInput('');
         return;
     }
-    
-    // Allow sending if there's text OR images
     if ((!input.trim() && pendingImages.length === 0) || !activeModel || !provider || isStreaming) return;
-    
     shouldAutoScrollRef.current = true;
     const userMsg: Message = {
       id: Date.now().toString(),
@@ -734,7 +766,6 @@ export const Chat: React.FC<ChatProps> = ({
 
   return (
     <div className={`flex flex-col h-full relative z-10 ${styles.font}`}>
-      
       <div 
         className="flex-1 overflow-y-auto p-4 space-y-6 relative z-10" 
         ref={scrollRef}
@@ -766,7 +797,6 @@ export const Chat: React.FC<ChatProps> = ({
 
       <div className={`p-4 ${styles.headerBorder} ${styles.secondary} relative z-[70]`}>
         <div className="relative">
-          {/* Pending Images Preview */}
           {pendingImages.length > 0 && (
               <div className="flex gap-2 mb-2 overflow-x-auto pb-2">
                   {pendingImages.map((img, idx) => (
@@ -802,7 +832,6 @@ export const Chat: React.FC<ChatProps> = ({
           
           <div className="flex justify-between mt-2 items-center relative z-50">
              <div className="flex gap-2 items-center">
-                {/* Upload Button */}
                 {isMultimodal && (
                     <>
                         <input 
