@@ -222,9 +222,58 @@ export const THEME_STYLES = {
       
       sidebarBorder: 'border-r border-[#003566]',
       headerBorder: 'border-b border-[#003566]',
-      card: 'bg-[#001d3d] border border-[#00b4d8]/30 shadow-[0_0_20px_rgba(0,180,216,0.1)]',
-      button: 'rounded-lg shadow-[0_0_10px_rgba(0,180,216,0.4)] font-bold transition-all hover:shadow-[0_0_20px_rgba(0,180,216,0.8)]'
-  }
+       card: 'bg-[#001d3d] border border-[#00b4d8]/30 shadow-[0_0_20px_rgba(0,180,216,0.1)]',
+       button: 'rounded-lg shadow-[0_0_10px_rgba(0,180,216,0.4)] font-bold transition-all hover:shadow-[0_0_20px_rgba(0,180,216,0.8)]'
+   },
+   // SHADCN/UI: Clean, minimal, accessible
+   [Theme.SHADCN_DARK]: {
+       type: 'modern',
+       bg: 'bg-[#09090b]',
+       text: 'text-[#fafafa]',
+       textMuted: 'text-[#a1a1aa]',
+       primary: 'bg-[#fafafa] hover:bg-[#f4f4f5] text-[#09090b]',
+       primaryText: 'text-[#09090b]',
+       secondary: 'bg-[#27272a] hover:bg-[#3f3f46] text-[#fafafa]',
+       secondaryText: 'text-[#fafafa]',
+       accent: 'text-[#fafafa]',
+       border: 'border-[#27272a]',
+       
+       font: 'font-sans',
+       radius: 'rounded-md',
+       borderWidth: 'border',
+       borderColor: 'border-[#27272a]',
+       shadow: 'shadow-sm',
+       inputBg: 'bg-[#27272a]',
+       
+       sidebarBorder: 'border-r border-[#27272a]',
+       headerBorder: 'border-b border-[#27272a]',
+       card: 'bg-[#09090b] border border-[#27272a]',
+       button: 'rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fafafa] focus-visible:ring-offset-2 focus-visible:ring-offset-[#09090b]'
+   },
+   [Theme.SHADCN_LIGHT]: {
+       type: 'modern',
+       bg: 'bg-[#ffffff]',
+       text: 'text-[#09090b]',
+       textMuted: 'text-[#71717a]',
+       primary: 'bg-[#09090b] hover:bg-[#27272a] text-[#fafafa]',
+       primaryText: 'text-[#fafafa]',
+       secondary: 'bg-[#f4f4f5] hover:bg-[#e4e4e7] text-[#09090b]',
+       secondaryText: 'text-[#09090b]',
+       accent: 'text-[#09090b]',
+       border: 'border-[#e4e4e7]',
+       
+       font: 'font-sans',
+       radius: 'rounded-md',
+       borderWidth: 'border',
+       borderColor: 'border-[#e4e4e7]',
+       shadow: 'shadow-sm',
+       inputBg: 'bg-[#ffffff]',
+       
+       sidebarBorder: 'border-r border-[#e4e4e7]',
+       headerBorder: 'border-b border-[#e4e4e7]',
+       card: 'bg-[#ffffff] border border-[#e4e4e7]',
+       button: 'rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090b] focus-visible:ring-offset-2 focus-visible:ring-offset-[#ffffff]'
+   }
 };
 
 export const TRANSLATIONS = {
@@ -285,6 +334,8 @@ export const TRANSLATIONS = {
     themeModernNight: 'MODERN NIGHT',
     themeClay: 'CLAY GLASS',
     themeBiolum: 'BIOLUMINESCENCE',
+    themeShadcnDay: 'SHADCN LIGHT',
+    themeShadcnNight: 'SHADCN DARK',
     changeTheme: 'Change Theme',
     changeLanguage: 'Change Language',
     searchPlaceholder: 'Search messages...',
@@ -377,6 +428,8 @@ export const TRANSLATIONS = {
     themeModernNight: '现代夜间',
     themeClay: '粘土玻璃',
     themeBiolum: '生物发光',
+    themeShadcnDay: 'Shadcn 浅色',
+    themeShadcnNight: 'Shadcn 深色',
     changeTheme: '切换主题',
     changeLanguage: '切换语言',
     searchPlaceholder: '搜索消息...',
@@ -469,6 +522,8 @@ export const TRANSLATIONS = {
     themeModernNight: 'モダンナイト',
     themeClay: 'クレイグラス',
     themeBiolum: '生物発光',
+    themeShadcnDay: 'Shadcn ライト',
+    themeShadcnNight: 'Shadcn ダーク',
     changeTheme: 'テーマ変更',
     changeLanguage: '言語変更',
     searchPlaceholder: 'メッセージ検索...',
