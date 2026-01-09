@@ -158,8 +158,8 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
 
     return (
         <ReactMarkdown
-            remarkPlugins={[remarkGfm, remarkMath]}
-            rehypePlugins={[rehypeKatex, rehypeRaw]}
+            remarkPlugins={[remarkGfm, remarkMath as any]}
+            rehypePlugins={[rehypeKatex, rehypeRaw as any]}
             components={{
                 style: () => null,
                 script: () => null,
@@ -353,10 +353,10 @@ const ToolDetails: React.FC<{ content: string; theme: Theme; language: Language;
                          <div className="flex items-center gap-2">
                              <span className="font-bold text-blue-500">{p.key}</span>
                              {Object.entries(p.attrs).map(([k, v]) => (
-                                 <span key={k} className="opacity-70">
-                                     <span className="text-purple-500">{k}</span>=
-                                     <span className="text-green-600">"{v}"</span>
-                                 </span>
+                                  <span key={k} className="opacity-70">
+                                      <span className="text-purple-500">{k}</span>=
+                                      <span className="text-green-600">"{String(v)}"</span>
+                                  </span>
                              ))}
                          </div>
                          {p.value && (

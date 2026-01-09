@@ -775,18 +775,18 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
                    </div>
   
                    {(newModel.type === 'chat' || newModel.type === 'multimodal') && (
-                      <div className="grid grid-cols-3 gap-4">
-                          <PixelInput theme={theme} label={t.context} type="number" value={newModel.contextLength || ''} onChange={e => setNewModel({...newModel, contextLength: parseInt(e.target.value)})} />
-                          <PixelInput theme={theme} label={t.maxOutput} type="number" value={newModel.maxTokens || ''} onChange={e => setNewModel({...newModel, maxTokens: parseInt(e.target.value)})} />
-                          <PixelInput theme={theme} label={t.temp} type="number" step="0.1" value={newModel.temperature} onChange={e => setNewModel({...newModel, temperature: parseFloat(e.target.value)})} />
-                      </div>
+                    <div className="grid grid-cols-3 gap-4">
+                        <PixelInput theme={theme} label={t.context} type="number" min="1" max="128000" value={newModel.contextLength || ''} onChange={e => setNewModel({...newModel, contextLength: parseInt(e.target.value) || 0})} />
+                        <PixelInput theme={theme} label={t.maxOutput} type="number" min="1" max="16384" value={newModel.maxTokens || ''} onChange={e => setNewModel({...newModel, maxTokens: parseInt(e.target.value) || 0})} />
+                        <PixelInput theme={theme} label={t.temp} type="number" min="0" max="2" step="0.1" value={newModel.temperature ?? ''} onChange={e => setNewModel({...newModel, temperature: parseFloat(e.target.value) || 0})} />
+                    </div>
                    )}
   
-                   {newModel.type === 'embedding' && (
-                       <div className="grid grid-cols-2 gap-4">
-                           <PixelInput theme={theme} label={t.dimensions} type="number" value={newModel.dimensions || ''} onChange={e => setNewModel({...newModel, dimensions: parseInt(e.target.value)})} placeholder="1536" />
-                       </div>
-                   )}
+                    {newModel.type === 'embedding' && (
+                        <div className="grid grid-cols-2 gap-4">
+                            <PixelInput theme={theme} label={t.dimensions} type="number" min="1" max="8192" value={newModel.dimensions || ''} onChange={e => setNewModel({...newModel, dimensions: parseInt(e.target.value) || 0})} placeholder="1536" />
+                        </div>
+                    )}
                    
                    <div className="flex items-center gap-2 mt-4">
                       <input 
@@ -805,7 +805,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
                      <PixelButton theme={theme} onClick={handleTestModel} disabled={!newModel.providerId || !newModel.modelId || isTestingModel}>
                        {isTestingModel ? <Loader2 className="w-4 h-4 animate-spin"/> : null} {isTestingModel ? t.testing : t.testModel}
                      </PixelButton>
-                     <PixelButton theme={theme} onClick={handleSaveModel} disabled={!newModel.providerId || !newModel.name}>
+                     <PixelButton theme={theme} onClick={handleSaveModel} disabled={!newModel.providerId || !newModel.name || !newModel.modelId}>
                        {editingModelId ? <Save className="w-4 h-4" /> : <Plus className="w-4 h-4" />} {editingModelId ? t.editModel : t.addModel}
                      </PixelButton>
                    </div>

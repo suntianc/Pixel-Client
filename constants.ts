@@ -5,8 +5,8 @@ import { LLMProvider, LLMModel, Theme, AceConfig, Language } from './types';
 import React from 'react';
 
 // ApexBridge Configuration
-export const API_BASE_URL = 'http://localhost:12345';
-export const API_KEY = 'sk-apex-bridge-key'; // Replace with your actual bridge key
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:12345';
+export const API_KEY = import.meta.env.VITE_API_KEY || '';
 
 export const INITIAL_PROVIDERS: LLMProvider[] = []; 
 export const INITIAL_MODELS: LLMModel[] = []; 
@@ -318,7 +318,9 @@ export const TRANSLATIONS = {
     error: 'ERROR',
     mcpStats: 'MCP SYSTEM STATS',
     uptime: 'UPTIME',
-    totalTools: 'TOTAL TOOLS'
+    totalTools: 'TOTAL TOOLS',
+    configSaved: 'CONFIG SAVED',
+    saveConfig: 'SAVE CONFIG'
   },
   zh: {
     newChat: '新对话',
@@ -411,7 +413,9 @@ export const TRANSLATIONS = {
     error: '错误',
     mcpStats: 'MCP 系统统计',
     uptime: '运行时间',
-    totalTools: '工具总数'
+    totalTools: '工具总数',
+    configSaved: '配置已保存',
+    saveConfig: '保存配置'
   },
   ja: {
     newChat: '新規チャット',
@@ -504,6 +508,8 @@ export const TRANSLATIONS = {
     error: 'エラー',
     mcpStats: 'MCP システム統計',
     uptime: '稼働時間',
-    totalTools: 'ツール総数'
+    totalTools: 'ツール総数',
+    configSaved: '設定保存済み',
+    saveConfig: '設定を保存'
   }
 };

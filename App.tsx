@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Theme, LLMProvider, LLMModel, Message, AceConfig, Language, ChatSession } from './types';
-import { INITIAL_ACE_CONFIG, THEME_STYLES, TRANSLATIONS, getProviderIcon } from './constants';
+import { Theme, LLMProvider, LLMModel, Message, Language, ChatSession } from './types';
+import { THEME_STYLES, TRANSLATIONS, getProviderIcon } from './constants';
 import { PixelButton, PixelSelect, PixelCard } from './components/PixelUI';
 import { ModelManager } from './components/ModelManager';
 import { Chat } from './components/Chat';
@@ -19,7 +19,6 @@ const App: React.FC = () => {
   const [language, setLanguage] = useState<Language>('zh');
   const [providers, setProviders] = useState<LLMProvider[]>([]);
   const [models, setModels] = useState<LLMModel[]>([]);
-  const [aceConfig, setAceConfig] = useState<AceConfig>(INITIAL_ACE_CONFIG);
   const [activeModelId, setActiveModelId] = useState<string>('');
   const [isModelManagerOpen, setIsModelManagerOpen] = useState(false);
   
