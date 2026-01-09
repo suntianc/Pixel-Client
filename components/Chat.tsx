@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useMemo, useLayoutEffect } from 're
 import { Theme, Message, LLMModel, LLMProvider, Language } from '../types';
 import { PixelButton } from './PixelUI';
 import { THEME_STYLES, TRANSLATIONS } from '../constants';
-import { Send, Copy, Check, Moon, Sun, Star, Cpu, Globe, Palette, Loader2, Brain, ChevronDown, ChevronRight, BrainCircuit, Play, Maximize, FileCode, Box, Terminal, Paperclip, X, Square, Circle } from 'lucide-react';
+import { Send, Copy, Check, Moon, Sun, Star, Cpu, Globe, Palette, Loader2, Brain, ChevronDown, ChevronRight, BrainCircuit, Play, Maximize, FileCode, Box, Terminal, Paperclip, X, Square, Circle, Zap, Sunset } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -852,9 +852,11 @@ export const Chat: React.FC<ChatProps> = ({
                             flex flex-col z-[70] overflow-hidden
                         `}>
                              <ThemeOption targetTheme={Theme.LIGHT} icon={<Sun size={14}/>} label={t.themeDay} />
-                              <ThemeOption targetTheme={Theme.DARK} icon={<Moon size={14}/>} label={t.themeNight} />
-                              <ThemeOption targetTheme={Theme.SHADCN_LIGHT} icon={<Square size={14}/>} label={t.themeShadcnDay} />
-                              <ThemeOption targetTheme={Theme.SHADCN_DARK} icon={<Circle size={14}/>} label={t.themeShadcnNight} />
+                               <ThemeOption targetTheme={Theme.DARK} icon={<Moon size={14}/>} label={t.themeNight} />
+                               <ThemeOption targetTheme={Theme.SHADCN_LIGHT} icon={<Square size={14}/>} label={t.themeShadcnDay} />
+                               <ThemeOption targetTheme={Theme.SHADCN_DARK} icon={<Circle size={14}/>} label={t.themeShadcnNight} />
+                               <ThemeOption targetTheme={Theme.CYBER} icon={<Zap size={14}/>} label={t.themeCyber} />
+                               <ThemeOption targetTheme={Theme.SUNSET} icon={<Sunset size={14}/>} label={t.themeSunset} />
                           </div>
                     )}
                     <PixelButton 

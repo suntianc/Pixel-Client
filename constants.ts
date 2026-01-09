@@ -69,108 +69,188 @@ export const getProviderIcon = (type: string): React.ReactNode => {
 
 // Expanded Theme System
 export const THEME_STYLES = {
-  // PIXEL: High Contrast, Thick Borders, Sharp Edges
+  // PIXEL DARK: High Contrast, Thick Borders, Sharp Edges
   [Theme.DARK]: {
     type: 'pixel',
-    bg: 'bg-[#0D0C1D]',
-    text: 'text-[#FFEED1]',
-    textMuted: 'text-[#FFEED1]/60',
-    primary: 'bg-[#FF00FF] hover:brightness-110',
+    bg: 'bg-[#0F0E17]',
+    text: 'text-[#FFECD1]',
+    textMuted: 'text-[#FFECD1]/50',
+    primary: 'bg-[#B957CE] hover:bg-[#D479E6]',
     primaryText: 'text-white',
-    secondary: 'bg-[#2D2B40]',
-    secondaryText: 'text-[#FFEED1]',
-    accent: 'text-[#00FFFF]',
-    border: 'border-2 border-[#FF00FF]',
+    secondary: 'bg-[#1A1938]',
+    secondaryText: 'text-[#FFECD1]',
+    accent: 'text-[#00D4FF]',
+    success: 'text-[#4ADE80]',
+    warning: 'text-[#FBBF24]',
+    error: 'text-[#F87171]',
+    border: 'border-2 border-[#1A1938]',
     
     // Structural
     font: 'font-pixel-verse',
     radius: 'rounded-none',
     borderWidth: 'border-2',
-    borderColor: 'border-black',
+    borderColor: 'border-[#1A1938]',
     shadow: 'pixel-shadow',
-    inputBg: 'bg-[#1a1929]',
+    inputBg: 'bg-[#14132A]',
     
     // Layout specifics
-    sidebarBorder: 'border-r-4 border-black',
-    headerBorder: 'border-b-4 border-black',
-    card: 'border-4 border-black bg-[#2D2B40] pixel-shadow',
-    button: 'border-2 border-black pixel-shadow active:translate-x-[2px] active:translate-y-[2px] active:shadow-none uppercase tracking-widest font-bold'
+    sidebarBorder: 'border-r-4 border-[#1A1938]',
+    headerBorder: 'border-b-4 border-[#1A1938]',
+    card: 'border-4 border-[#1A1938] bg-[#1A1938] pixel-shadow',
+    button: 'border-2 border-[#1A1938] pixel-shadow active:translate-x-[2px] active:translate-y-[2px] active:shadow-none uppercase tracking-widest font-bold'
   },
+  // PIXEL LIGHT: Warm cream palette with refined colors
   [Theme.LIGHT]: {
     type: 'pixel',
-    bg: 'bg-[#FFEED1]',
-    text: 'text-[#2d1b2e]',
-    textMuted: 'text-[#2d1b2e]/60',
-    primary: 'bg-[#FF7AA2] hover:brightness-110',
+    bg: 'bg-[#FFF8F0]',
+    text: 'text-[#2D1B2E]',
+    textMuted: 'text-[#2D1B2E]/50',
+    primary: 'bg-[#E06C9C] hover:bg-[#E88BB0]',
     primaryText: 'text-white',
-    secondary: 'bg-[#FFF8E7]',
-    secondaryText: 'text-[#2d1b2e]',
-    accent: 'text-[#ff00ff]',
-    border: 'border-2 border-black',
+    secondary: 'bg-[#F5EFE6]',
+    secondaryText: 'text-[#2D1B2E]',
+    accent: 'text-[#9D4EDD]',
+    success: 'text-[#22C55E]',
+    warning: 'text-[#EAB308]',
+    error: 'text-[#EF4444]',
+    border: 'border-2 border-[#2D1B2E]',
     
     // Structural
     font: 'font-pixel-verse',
     radius: 'rounded-none',
     borderWidth: 'border-2',
-    borderColor: 'border-black',
-    shadow: 'pixel-shadow',
-    inputBg: 'bg-white',
+    borderColor: 'border-[#2D1B2E]',
+    shadow: 'shadow-[4px_4px_0px_0px_#2D1B2E]',
+    inputBg: 'bg-[#FFFFFF]',
     
     // Layout specifics
-    sidebarBorder: 'border-r-4 border-black',
-    headerBorder: 'border-b-4 border-black',
-    card: 'border-4 border-black bg-[#FFF8E7] pixel-shadow',
-    button: 'border-2 border-black pixel-shadow active:translate-x-[2px] active:translate-y-[2px] active:shadow-none uppercase tracking-widest font-bold'
+    sidebarBorder: 'border-r-4 border-[#2D1B2E]',
+    headerBorder: 'border-b-4 border-[#2D1B2E]',
+    card: 'border-4 border-[#2D1B2E] bg-[#F5EFE6] shadow-[4px_4px_0px_0px_#2D1B2E]',
+    button: 'border-2 border-[#2D1B2E] shadow-[4px_4px_0px_0px_#2D1B2E] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none uppercase tracking-widest font-bold'
   },
-  // SHADCN/UI: Clean, minimal, accessible
-   [Theme.SHADCN_DARK]: {
-       type: 'modern',
-       bg: 'bg-[#09090b]',
-       text: 'text-[#fafafa]',
-       textMuted: 'text-[#a1a1aa]',
-       primary: 'bg-[#fafafa] hover:bg-[#f4f4f5] text-[#09090b]',
-       primaryText: 'text-[#09090b]',
-       secondary: 'bg-[#27272a] hover:bg-[#3f3f46] text-[#fafafa]',
-       secondaryText: 'text-[#fafafa]',
-       accent: 'text-[#fafafa]',
-       border: 'border-[#27272a]',
-       
-       font: 'font-sans',
-       radius: 'rounded-md',
-       borderWidth: 'border',
-       borderColor: 'border-[#27272a]',
-       shadow: 'shadow-sm',
-       inputBg: 'bg-[#27272a]',
-       
-       sidebarBorder: 'border-r border-[#27272a]',
-       headerBorder: 'border-b border-[#27272a]',
-       card: 'bg-[#09090b] border border-[#27272a]',
-       button: 'rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fafafa] focus-visible:ring-offset-2 focus-visible:ring-offset-[#09090b]'
-   },
-   [Theme.SHADCN_LIGHT]: {
-       type: 'modern',
-       bg: 'bg-[#ffffff]',
-       text: 'text-[#09090b]',
-       textMuted: 'text-[#71717a]',
-       primary: 'bg-[#09090b] hover:bg-[#27272a] text-[#fafafa]',
-       primaryText: 'text-[#fafafa]',
-       secondary: 'bg-[#f4f4f5] hover:bg-[#e4e4e7] text-[#09090b]',
-       secondaryText: 'text-[#09090b]',
-       accent: 'text-[#09090b]',
-       border: 'border-[#e4e4e7]',
-       
-       font: 'font-sans',
-       radius: 'rounded-md',
-       borderWidth: 'border',
-       borderColor: 'border-[#e4e4e7]',
-       shadow: 'shadow-sm',
-       inputBg: 'bg-[#ffffff]',
-       
-       sidebarBorder: 'border-r border-[#e4e4e7]',
-       headerBorder: 'border-b border-[#e4e4e7]',
-       card: 'bg-[#ffffff] border border-[#e4e4e7]',
-       button: 'rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090b] focus-visible:ring-offset-2 focus-visible:ring-offset-[#ffffff]'
-   }
+  // SHADCN DARK: Clean minimal with subtle gradient and accent
+  [Theme.SHADCN_DARK]: {
+    type: 'modern',
+    bg: 'bg-[#09090b] bg-gradient-to-b from-[#1A1A24] to-[#09090b]',
+    text: 'text-[#FAFAFA]',
+    textMuted: 'text-[#A1A1AA]',
+    primary: 'bg-[#FAFAFA] hover:bg-[#E4E4E7] text-[#09090B]',
+    primaryText: 'text-[#09090B]',
+    secondary: 'bg-[#18181B] hover:bg-[#27272A]',
+    secondaryText: 'text-[#FAFAFA]',
+    accent: 'text-[#A78BFA]',
+    success: 'text-[#4ADE80]',
+    warning: 'text-[#FBBF24]',
+    error: 'text-[#F87171]',
+    border: 'border-[#27272A]',
+    
+    // Structural
+    font: 'font-sans',
+    radius: 'rounded-lg',
+    borderWidth: 'border',
+    borderColor: 'border-[#27272A]',
+    shadow: 'shadow-lg',
+    inputBg: 'bg-[#18181B]',
+    
+    // Layout specifics
+    sidebarBorder: 'border-r border-[#27272A]',
+    headerBorder: 'border-b border-[#27272A]',
+    card: 'bg-[#09090b]/80 backdrop-blur-sm border border-[#27272A]',
+    button: 'rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA] focus-visible:ring-offset-2 focus-visible:ring-offset-[#09090b]'
+  },
+  // SHADCN LIGHT: Clean minimal with warmth
+  [Theme.SHADCN_LIGHT]: {
+    type: 'modern',
+    bg: 'bg-[#FAFAFA]',
+    text: 'text-[#18181B]',
+    textMuted: 'text-[#71717A]',
+    primary: 'bg-[#18181B] hover:bg-[#27272A] text-white',
+    primaryText: 'text-white',
+    secondary: 'bg-[#F4F4F5] hover:bg-[#E4E4E7]',
+    secondaryText: 'text-[#18181B]',
+    accent: 'text-[#7C3AED]',
+    success: 'text-[#22C55E]',
+    warning: 'text-[#EAB308]',
+    error: 'text-[#EF4444]',
+    border: 'border-[#E4E4E7]',
+    
+    // Structural
+    font: 'font-sans',
+    radius: 'rounded-xl',
+    borderWidth: 'border',
+    borderColor: 'border-[#E4E4E7]',
+    shadow: 'shadow-lg',
+    inputBg: 'bg-[#FFFFFF]',
+    
+    // Layout specifics
+    sidebarBorder: 'border-r border-[#E4E4E7]',
+    headerBorder: 'border-b border-[#E4E4E7]',
+    card: 'bg-white border border-[#E4E4E7]',
+    button: 'rounded-xl font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7C3AED] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FAFAFA]'
+  },
+  // CYBER NEON: Cyberpunk aesthetics with glowing neon accents
+  [Theme.CYBER]: {
+    type: 'cyber',
+    bg: 'bg-[#050510]',
+    text: 'text-[#E0E0E0]',
+    textMuted: 'text-[#E0E0E0]/50',
+    primary: 'bg-[#00FFE1] text-black shadow-[0_0_20px_rgba(0,255,225,0.5)]',
+    primaryHover: 'bg-[#33FFF5] shadow-[0_0_30px_rgba(0,255,225,0.7)]',
+    primaryText: 'text-black',
+    secondary: 'bg-[#1A1A3A]',
+    secondaryText: 'text-[#E0E0E0]',
+    accent: 'text-[#FF00FF]',
+    success: 'text-[#00FF88]',
+    warning: 'text-[#FFDD00]',
+    error: 'text-[#FF3366]',
+    border: 'border-[#00FFE1]',
+    
+    // Structural
+    font: 'font-sans',
+    radius: 'rounded-none',
+    borderWidth: 'border',
+    borderColor: 'border-[#00FFE1]',
+    shadow: 'cyber-shadow',
+    inputBg: 'bg-[#0A0A20]',
+    
+    // Layout specifics
+    sidebarBorder: 'border-r border-[#00FFE1]/30',
+    headerBorder: 'border-b border-[#00FFE1]/30',
+    card: 'bg-[#0A0A20] border border-[#00FFE1]/50 shadow-[0_0_15px_rgba(0,255,225,0.2)]',
+    button: 'border border-[#00FFE1] shadow-[0_0_10px_rgba(0,255,225,0.3)] transition-all hover:shadow-[0_0_20px_rgba(0,255,225,0.5)]'
+  },
+  // SUNSET GLOW: Warm gradient aesthetic with glassmorphism
+  [Theme.SUNSET]: {
+    type: 'glass',
+    bg: 'bg-[#1C1C1E] bg-gradient-to-br from-[#2D2D32] to-[#1C1C1E]',
+    text: 'text-[#FFFBF5]',
+    textMuted: 'text-[#FFFBF5]/50',
+    primary: 'bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] text-white',
+    primaryHover: 'bg-gradient-to-r from-[#FF8C5A] to-[#FFB347]',
+    primaryText: 'text-white',
+    secondary: 'bg-[#2D2D32]',
+    secondaryText: 'text-[#FFFBF5]',
+    accent: 'text-[#FFB347]',
+    success: 'text-[#4ADE80]',
+    warning: 'text-[#FBBF24]',
+    error: 'text-[#F87171]',
+    border: 'border-[#3D3D42]',
+    
+    // Structural
+    font: 'font-sans',
+    radius: 'rounded-2xl',
+    borderWidth: 'border',
+    borderColor: 'border-[#3D3D42]',
+    shadow: 'sunset-shadow',
+    inputBg: 'bg-[#252528]',
+    
+    // Layout specifics
+    sidebarBorder: 'border-r border-[#3D3D42]',
+    headerBorder: 'border-b border-[#3D3D42]',
+    card: 'bg-[#2D2D32]/90 backdrop-blur-xl border border-[#3D3D42] shadow-xl',
+    button: 'rounded-2xl font-medium transition-all hover:shadow-lg hover:shadow-orange-500/10'
+  }
 };
 
 export const TRANSLATIONS = {
@@ -229,6 +309,8 @@ export const TRANSLATIONS = {
     themeNight: 'NIGHT MODE',
     themeShadcnDay: 'SHADCN LIGHT',
     themeShadcnNight: 'SHADCN DARK',
+    themeCyber: 'CYBER NEON',
+    themeSunset: 'SUNSET GLOW',
     changeTheme: 'Change Theme',
     changeLanguage: 'Change Language',
     searchPlaceholder: 'Search messages...',
@@ -319,6 +401,8 @@ export const TRANSLATIONS = {
     themeNight: '夜间模式',
     themeShadcnDay: 'Shadcn 浅色',
     themeShadcnNight: 'Shadcn 深色',
+    themeCyber: '赛博霓虹',
+    themeSunset: '落日余晖',
     changeTheme: '切换主题',
     changeLanguage: '切换语言',
     searchPlaceholder: '搜索消息...',
@@ -409,6 +493,8 @@ export const TRANSLATIONS = {
     themeNight: 'ナイトモード',
     themeShadcnDay: 'Shadcn ライト',
     themeShadcnNight: 'Shadcn ダーク',
+    themeCyber: 'サイバー NEON',
+    themeSunset: 'サンセット グロー',
     changeTheme: 'テーマ変更',
     changeLanguage: '言語変更',
     searchPlaceholder: 'メッセージ検索...',

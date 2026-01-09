@@ -3,7 +3,9 @@ export enum Theme {
   DARK = 'dark',
   LIGHT = 'light',
   SHADCN_DARK = 'shadcn_dark',
-  SHADCN_LIGHT = 'shadcn_light'
+  SHADCN_LIGHT = 'shadcn_light',
+  CYBER = 'cyber',
+  SUNSET = 'sunset'
 }
 
 export type Language = 'en' | 'zh' | 'ja';
