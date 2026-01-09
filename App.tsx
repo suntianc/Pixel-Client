@@ -450,15 +450,13 @@ const App: React.FC = () => {
       </div>
 
       {isModelManagerOpen && (
-        <ModelManager 
+        <ModelManager
             theme={theme}
             language={language}
             providers={providers}
             models={models}
-            aceConfig={aceConfig}
             onUpdateProviders={setProviders}
             onUpdateModels={setModels}
-            onUpdateAceConfig={setAceConfig}
             onClose={() => setIsModelManagerOpen(false)}
         />
       )}

@@ -81,19 +81,22 @@ export interface McpTool {
 export interface McpServerStatus {
   phase: 'starting' | 'running' | 'stopping' | 'stopped' | 'error';
   message: string;
-  startedAt?: string;
+  uptime?: number;
+  startTime?: string;
 }
 
 export interface McpServer {
   id: string;
+  config?: {
+    id: string;
+    type: string;
+    command: string;
+    args?: string[];
+    env?: Record<string, string>;
+  };
   status: McpServerStatus;
   tools?: McpTool[];
   lastActivity?: string;
-  // Configuration for display/editing if available
-  type?: string;
-  command?: string;
-  args?: string[];
-  env?: Record<string, string>;
 }
 
 export interface McpStats {

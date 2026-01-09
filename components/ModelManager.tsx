@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { Theme, LLMProvider, LLMModel, ModelType, AceConfig, Language, ProviderAdapter, McpServer, McpStats, McpRegistrationConfig } from '../types';
+import { Theme, LLMProvider, LLMModel, ModelType, Language, ProviderAdapter, McpServer, McpStats, McpRegistrationConfig } from '../types';
 import { PixelButton, PixelInput, PixelCard, PixelSelect, PixelBadge } from './PixelUI';
 import { THEME_STYLES, TRANSLATIONS, getProviderIcon } from '../constants';
-import { Trash2, Plus, Zap, X, Cpu, Save, AlertTriangle, Edit, Smile, Star, Activity, Wifi, Loader2, Server, Terminal, Box, Play, PauseCircle } from 'lucide-react';
+import { Trash2, Plus, Zap, X, Save, Edit, Smile, Star, Activity, Wifi, Loader2, Server, Terminal, Box, Play, PauseCircle } from 'lucide-react';
 import { ApiClient } from '../services/apiClient';
 
 interface ModelManagerProps {
@@ -11,10 +11,8 @@ interface ModelManagerProps {
   language: Language;
   providers: LLMProvider[];
   models: LLMModel[];
-  aceConfig: AceConfig;
   onUpdateProviders: (providers: LLMProvider[]) => void;
   onUpdateModels: (models: LLMModel[]) => void;
-  onUpdateAceConfig: (config: AceConfig) => void;
   onClose: () => void;
 }
 
@@ -23,13 +21,11 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
   language,
   providers,
   models,
-  aceConfig,
   onUpdateProviders,
   onUpdateModels,
-  onUpdateAceConfig,
   onClose
 }) => {
-  const [activeTab, setActiveTab] = useState<'providers' | 'models' | 'ace' | 'mascot' | 'mcp'>('providers');
+  const [activeTab, setActiveTab] = useState<'providers' | 'models' | 'mascot' | 'mcp'>('providers');
   const [testStatus, setTestStatus] = useState<string | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const styles = THEME_STYLES[theme];
@@ -61,8 +57,6 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
     dimensions: 1536,
     isDefault: false
   });
-  // Local State for ACE Config
-  const [localAceConfig, setLocalAceConfig] = useState<AceConfig>(aceConfig);
 
   // Mascot Config State
   const [mascotSystemPrompt, setMascotSystemPrompt] = useState('');
@@ -285,22 +279,6 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
     }
   };
 
-  const handleSaveAceConfig = () => {
-      const isConfigured = aceConfig.fastModelId || aceConfig.reflectorModelId || aceConfig.curatorModelId;
-      if (isConfigured) {
-          setShowConfirmDialog(true);
-      } else {
-          confirmSaveAceConfig();
-      }
-  };
-
-  const confirmSaveAceConfig = () => {
-      onUpdateAceConfig(localAceConfig);
-      setShowConfirmDialog(false);
-      setTestStatus('ace_saved');
-      setTimeout(() => setTestStatus(null), 2000);
-  };
-
   const handleSaveMascotConfig = () => {
       localStorage.setItem('pixel_mascot_system_prompt', mascotSystemPrompt);
       setTestStatus('mascot_saved');
@@ -407,33 +385,6 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      {/* CONFIRMATION DIALOG OVERLAY */}
-      {showConfirmDialog && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-            <PixelCard theme={theme} className={`w-[90%] max-w-[400px] ${styles.bg} ${styles.text} flex flex-col gap-4 border-4 border-red-500 animate-float`}>
-                <div className="flex items-center gap-2 text-red-500 font-bold text-xl border-b-2 border-black pb-2">
-                    <AlertTriangle /> {t.warning}
-                </div>
-                <div className="py-2">
-                    <p className="font-bold text-lg leading-tight mb-2">
-                        {t.confirmModify}
-                    </p>
-                    <p className="text-sm opacity-80">
-                        {t.confirmModifyDesc}
-                    </p>
-                </div>
-                <div className="flex justify-end gap-4 mt-2">
-                    <PixelButton theme={theme} variant="secondary" onClick={() => setShowConfirmDialog(false)}>
-                        {t.cancel}
-                    </PixelButton>
-                    <PixelButton theme={theme} variant="danger" onClick={confirmSaveAceConfig}>
-                        {t.confirm}
-                    </PixelButton>
-                </div>
-            </PixelCard>
-        </div>
-      )}
-
       <PixelCard theme={theme} className={`w-full max-w-4xl h-[80vh] flex flex-col ${styles.bg} ${styles.text} overflow-hidden`}>
         <div className="flex justify-between items-center mb-4 border-b-4 border-black pb-2">
           <h2 className={`text-2xl font-bold flex items-center gap-2`}>
@@ -453,19 +404,12 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
           >
             {t.providers}
           </PixelButton>
-          <PixelButton 
-            theme={theme} 
-            onClick={() => setActiveTab('models')} 
+          <PixelButton
+            theme={theme}
+            onClick={() => setActiveTab('models')}
             variant={activeTab === 'models' ? 'primary' : 'secondary'}
           >
             {t.models}
-          </PixelButton>
-          <PixelButton 
-            theme={theme} 
-            onClick={() => setActiveTab('ace')} 
-            variant={activeTab === 'ace' ? 'primary' : 'secondary'}
-          >
-            {t.aceAgent}
           </PixelButton>
            <PixelButton 
             theme={theme} 
@@ -484,70 +428,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
         </div>
 
         {/* Content Area */}
-        {activeTab === 'ace' ? (
-          <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center">
-             <div className="max-w-2xl w-full space-y-8">
-                <div className="border-b-2 border-black pb-2 mb-4">
-                    <h3 className="text-xl font-bold flex items-center gap-2">
-                        <Cpu size={24} /> {t.aceConfigTitle}
-                    </h3>
-                    <p className="opacity-70 text-sm mt-1">{t.aceConfigDesc}</p>
-                </div>
-
-                <div className="space-y-6">
-                    <div className="bg-white/5 p-4 border-2 border-black">
-                        <PixelSelect 
-                            theme={theme} 
-                            label={t.fastModel} 
-                            value={localAceConfig.fastModelId} 
-                            onChange={(e) => setLocalAceConfig({...localAceConfig, fastModelId: e.target.value})}
-                        >
-                            <option value="">{t.selectModel}</option>
-                            {chatModels.map(m => <option key={m.id} value={m.id}>{m.name} ({m.modelId})</option>)}
-                        </PixelSelect>
-                        <div className="text-xs opacity-50 mt-1">{t.fastModelDesc}</div>
-                    </div>
-
-                    <div className="bg-white/5 p-4 border-2 border-black">
-                        <PixelSelect 
-                            theme={theme} 
-                            label={t.reflectorModel} 
-                            value={localAceConfig.reflectorModelId} 
-                            onChange={(e) => setLocalAceConfig({...localAceConfig, reflectorModelId: e.target.value})}
-                        >
-                            <option value="">{t.selectModel}</option>
-                            {chatModels.map(m => <option key={m.id} value={m.id}>{m.name} ({m.modelId})</option>)}
-                        </PixelSelect>
-                        <div className="text-xs opacity-50 mt-1">{t.reflectorModelDesc}</div>
-                    </div>
-
-                    <div className="bg-white/5 p-4 border-2 border-black">
-                        <PixelSelect 
-                            theme={theme} 
-                            label={t.curatorModel} 
-                            value={localAceConfig.curatorModelId} 
-                            onChange={(e) => setLocalAceConfig({...localAceConfig, curatorModelId: e.target.value})}
-                        >
-                            <option value="">{t.selectModel}</option>
-                            {chatModels.map(m => <option key={m.id} value={m.id}>{m.name} ({m.modelId})</option>)}
-                        </PixelSelect>
-                        <div className="text-xs opacity-50 mt-1">{t.curatorModelDesc}</div>
-                    </div>
-                </div>
-                
-                <div className="mt-8 p-4 border-2 border-dashed border-black/30 text-center opacity-50">
-                    {t.aceNote}
-                </div>
-
-                <div className="flex justify-end gap-4 items-center border-t-4 border-black pt-4">
-                    {testStatus === 'ace_saved' && <span className="text-green-500 font-bold animate-pulse">{t.configSaved}</span>}
-                    <PixelButton theme={theme} onClick={handleSaveAceConfig}>
-                         <Save className="w-4 h-4" /> {t.saveConfig}
-                    </PixelButton>
-                </div>
-             </div>
-          </div>
-        ) : activeTab === 'mascot' ? (
+        {activeTab === 'mascot' ? (
              <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center">
                  <div className="max-w-2xl w-full space-y-8">
                     <div className="border-b-2 border-black pb-2 mb-4">
@@ -586,9 +467,9 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
                     <div className="mb-4 bg-black/10 p-2 border border-black/20">
                         <div className="text-[10px] uppercase font-bold opacity-60 mb-1">{t.mcpStats}</div>
                         <div className="flex justify-between text-xs">
-                            <span>{t.mcpServers}: {mcpStats?.servers.total || 0}</span>
-                            <span className="text-green-600 font-bold">{t.running}: {mcpStats?.servers.running || 0}</span>
-                            <span>{t.totalTools}: {mcpStats?.tools.total || 0}</span>
+                            <span>{t.mcpServers}: {mcpStats?.servers?.total || 0}</span>
+                            <span className="text-green-600 font-bold">{t.running}: {mcpStats?.servers?.running || 0}</span>
+                            <span>{t.totalTools}: {mcpStats?.tools?.total || 0}</span>
                         </div>
                     </div>
                     {mcpServers.map(server => (
