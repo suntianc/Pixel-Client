@@ -2,10 +2,6 @@
 export enum Theme {
   DARK = 'dark',
   LIGHT = 'light',
-  MODERN_DARK = 'modern_dark',
-  MODERN_LIGHT = 'modern_light',
-  CLAY = 'clay',
-  BIOLUMINESCENCE = 'bioluminescence',
   SHADCN_DARK = 'shadcn_dark',
   SHADCN_LIGHT = 'shadcn_light'
 }

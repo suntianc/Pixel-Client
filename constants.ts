@@ -122,110 +122,7 @@ export const THEME_STYLES = {
     card: 'border-4 border-black bg-[#FFF8E7] pixel-shadow',
     button: 'border-2 border-black pixel-shadow active:translate-x-[2px] active:translate-y-[2px] active:shadow-none uppercase tracking-widest font-bold'
   },
-  // MODERN: Soft shadows, rounded corners, clean fonts
-  [Theme.MODERN_DARK]: {
-    type: 'modern',
-    bg: 'bg-[#0f172a]',
-    text: 'text-slate-200',
-    textMuted: 'text-slate-400',
-    primary: 'bg-blue-600 hover:bg-blue-700',
-    primaryText: 'text-white',
-    secondary: 'bg-[#1e293b]',
-    secondaryText: 'text-slate-200',
-    accent: 'text-blue-400',
-    border: 'border border-slate-700',
-    
-    // Structural
-    font: 'font-sans',
-    radius: 'rounded-lg',
-    borderWidth: 'border',
-    borderColor: 'border-slate-700',
-    shadow: 'shadow-lg',
-    inputBg: 'bg-[#1e293b]',
-    
-    // Layout specifics
-    sidebarBorder: 'border-r border-slate-800',
-    headerBorder: 'border-b border-slate-800',
-    card: 'border border-slate-700 bg-[#1e293b] shadow-xl',
-    button: 'rounded-md shadow-sm font-medium transition-colors'
-  },
-  [Theme.MODERN_LIGHT]: {
-    type: 'modern',
-    bg: 'bg-gray-50',
-    text: 'text-gray-900',
-    textMuted: 'text-gray-500',
-    primary: 'bg-indigo-600 hover:bg-indigo-700',
-    primaryText: 'text-white',
-    secondary: 'bg-white',
-    secondaryText: 'text-gray-900',
-    accent: 'text-indigo-600',
-    border: 'border border-gray-200',
-    
-    // Structural
-    font: 'font-sans',
-    radius: 'rounded-lg',
-    borderWidth: 'border',
-    borderColor: 'border-gray-200',
-    shadow: 'shadow-sm',
-    inputBg: 'bg-white',
-    
-    // Layout specifics
-    sidebarBorder: 'border-r border-gray-200',
-    headerBorder: 'border-b border-gray-200',
-    card: 'border border-gray-200 bg-white shadow-lg',
-    button: 'rounded-md shadow-sm font-medium transition-colors'
-  },
-  // CLAY: Neumorphism/Claymorphism hybrid
-  [Theme.CLAY]: {
-      type: 'modern',
-      bg: 'bg-[#e0e5ec]',
-      text: 'text-[#4a5568]',
-      textMuted: 'text-[#a0aec0]',
-      primary: 'bg-[#e0e5ec] hover:bg-[#d1d9e6] shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] text-[#4a5568]',
-      primaryText: 'text-[#4a5568]',
-      secondary: 'bg-[#e0e5ec]',
-      secondaryText: 'text-[#4a5568]',
-      accent: 'text-[#718096]',
-      border: 'border-none',
-      
-      font: 'font-sans',
-      radius: 'rounded-2xl',
-      borderWidth: 'border-0',
-      borderColor: 'border-transparent',
-      shadow: 'shadow-[9px_9px_16px_rgb(163,177,198,0.6),-9px_-9px_16px_rgba(255,255,255,0.5)]',
-      inputBg: 'bg-[#e0e5ec] shadow-[inset_6px_6px_12px_#b8b9be,inset_-6px_-6px_12px_#ffffff]',
-      
-      sidebarBorder: 'border-r border-white/50',
-      headerBorder: 'border-b border-white/50',
-      card: 'bg-[#e0e5ec] shadow-[9px_9px_16px_rgb(163,177,198,0.6),-9px_-9px_16px_rgba(255,255,255,0.5)]',
-      button: 'rounded-xl font-bold text-[#4a5568] shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] active:shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] transition-all'
-  },
-  // BIOLUMINESCENCE: Deep ocean, glowing
-  [Theme.BIOLUMINESCENCE]: {
-      type: 'modern',
-      bg: 'bg-[#000814]',
-      text: 'text-[#90e0ef]',
-      textMuted: 'text-[#0077b6]',
-      primary: 'bg-[#00b4d8] hover:bg-[#0096c7] shadow-[0_0_15px_rgba(0,180,216,0.6)]',
-      primaryText: 'text-[#000814]',
-      secondary: 'bg-[#001d3d]',
-      secondaryText: 'text-[#90e0ef]',
-      accent: 'text-[#00b4d8]',
-      border: 'border border-[#0077b6]',
-      
-      font: 'font-sans',
-      radius: 'rounded-xl',
-      borderWidth: 'border',
-      borderColor: 'border-[#003566]',
-      shadow: 'shadow-[0_0_10px_rgba(0,119,182,0.3)]',
-      inputBg: 'bg-[#001d3d]',
-      
-      sidebarBorder: 'border-r border-[#003566]',
-      headerBorder: 'border-b border-[#003566]',
-       card: 'bg-[#001d3d] border border-[#00b4d8]/30 shadow-[0_0_20px_rgba(0,180,216,0.1)]',
-       button: 'rounded-lg shadow-[0_0_10px_rgba(0,180,216,0.4)] font-bold transition-all hover:shadow-[0_0_20px_rgba(0,180,216,0.8)]'
-   },
-   // SHADCN/UI: Clean, minimal, accessible
+  // SHADCN/UI: Clean, minimal, accessible
    [Theme.SHADCN_DARK]: {
        type: 'modern',
        bg: 'bg-[#09090b]',
@@ -330,10 +227,6 @@ export const TRANSLATIONS = {
     llmConfig: 'LLM CONFIGURATION',
     themeDay: 'DAY MODE',
     themeNight: 'NIGHT MODE',
-    themeModernDay: 'MODERN DAY',
-    themeModernNight: 'MODERN NIGHT',
-    themeClay: 'CLAY GLASS',
-    themeBiolum: 'BIOLUMINESCENCE',
     themeShadcnDay: 'SHADCN LIGHT',
     themeShadcnNight: 'SHADCN DARK',
     changeTheme: 'Change Theme',
@@ -424,10 +317,6 @@ export const TRANSLATIONS = {
     llmConfig: '配置',
     themeDay: '日间模式',
     themeNight: '夜间模式',
-    themeModernDay: '现代日间',
-    themeModernNight: '现代夜间',
-    themeClay: '粘土玻璃',
-    themeBiolum: '生物发光',
     themeShadcnDay: 'Shadcn 浅色',
     themeShadcnNight: 'Shadcn 深色',
     changeTheme: '切换主题',
@@ -518,10 +407,6 @@ export const TRANSLATIONS = {
     llmConfig: 'LLM 設定',
     themeDay: 'デイモード',
     themeNight: 'ナイトモード',
-    themeModernDay: 'モダンデイ',
-    themeModernNight: 'モダンナイト',
-    themeClay: 'クレイグラス',
-    themeBiolum: '生物発光',
     themeShadcnDay: 'Shadcn ライト',
     themeShadcnNight: 'Shadcn ダーク',
     changeTheme: 'テーマ変更',
