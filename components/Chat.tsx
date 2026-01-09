@@ -161,8 +161,10 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
                 code: ({node, inline, className, children, ...props}: any) => {
                     const match = /language-(\w+)/.exec(className || '');
                     const lang = match ? match[1] : '';
-                    if (!inline && lang === 'mermaid') return <MermaidBlock code={String(children).replace(/\n$/, '')} theme={theme} />;
-                    if (!inline && lang === 'html') return <HtmlPreviewBlock code={String(children).replace(/\n$/, '')} theme={theme} />;
+                    // Fix: ensure children is cast to string to avoid "unknown" type errors in Markdown processing
+                    const content = String(children || '').replace(/\n$/, '');
+                    if (!inline && lang === 'mermaid') return <MermaidBlock code={content} theme={theme} />;
+                    if (!inline && lang === 'html') return <HtmlPreviewBlock code={content} theme={theme} />;
                     if (!inline && match) {
                         return (
                             <div className={cn(
@@ -184,7 +186,7 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
                                         PreTag="div"
                                         customStyle={{ margin: 0, borderRadius: 0, fontSize: '13px', lineHeight: '1.6', background: '#1e1e1e' }}
                                     >
-                                        {String(children).replace(/\n$/, '')}
+                                        {content}
                                     </SyntaxHighlighter>
                                 </div>
                             </div>
@@ -290,8 +292,6 @@ const ToolActionBlock: React.FC<{
             };
         }
 
-        // 状态覆盖逻辑
-        // 修正：使用显式的 border-l 颜色类，确保左侧边框颜色与文字配色一致
         let accentBorderClass = '';
         if (config.baseColor === 'violet') accentBorderClass = 'border-l-violet-500';
         else if (config.baseColor === 'emerald') accentBorderClass = 'border-l-emerald-500';
@@ -377,26 +377,46 @@ const ToolActionBlock: React.FC<{
     );
 });
 
-const ThinkingBlock: React.FC<{ content: string; theme: Theme; language: Language }> = React.memo(({ content, theme, language }) => {
-    const [isOpen, setIsOpen] = useState(false);
+const ThinkingBlock: React.FC<{ content: string; theme: Theme; language: Language; isThinking?: boolean }> = React.memo(({ content, theme, language, isThinking = false }) => {
+    const [isOpen, setIsOpen] = useState(isThinking); // 默认思考中时自动展开
     const t = TRANSLATIONS[language];
     const styles = THEME_STYLES[theme];
     const isPixel = styles.type === 'pixel';
 
+    // 动态文字：思考中 vs 思考完成
+    const label = useMemo(() => {
+        if (!isThinking) return language === 'zh' ? `${t.thinkingProcess} (已完成)` : `${t.thinkingProcess} (Completed)`;
+        return language === 'zh' ? '正在思考中...' : 'Thinking...';
+    }, [isThinking, language, t.thinkingProcess]);
+
     return (
         <div className={cn(
-            "my-4 border border-dashed transition-all duration-500 group",
+            "my-4 border border-dashed transition-all duration-500 group relative overflow-hidden",
             isPixel ? styles.borderColor + " " + styles.radius : "rounded-xl border-slate-200 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/30",
-            isOpen ? "border-solid bg-slate-50/50 dark:bg-slate-900/50" : "hover:border-slate-400"
+            isOpen ? "border-solid bg-slate-50/50 dark:bg-slate-900/50" : "hover:border-slate-400",
+            isThinking && "border-indigo-500/50"
         )}>
+            {/* 思考中的跑马灯线条效果 */}
+            {isThinking && (
+                <div className="absolute inset-0 pointer-events-none opacity-20">
+                    <div className="absolute top-0 left-0 w-[200%] h-px bg-gradient-to-r from-transparent via-indigo-500 to-transparent animate-move-horizontal"></div>
+                </div>
+            )}
+            
             <button 
                 onClick={() => setIsOpen(!isOpen)}
                 className="w-full flex items-center gap-3 px-4 py-3.5 text-xs font-bold uppercase tracking-[0.15em] text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
             >
-                <div className={cn("p-1.5 rounded-md border border-transparent transition-all", isOpen ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/20" : "bg-slate-100 dark:bg-slate-800 text-slate-500")}>
-                    <Brain size={16} />
+                <div className={cn(
+                    "p-1.5 rounded-md border border-transparent transition-all", 
+                    isThinking ? "bg-indigo-500 text-white animate-pulse shadow-lg shadow-indigo-500/20" : 
+                    isOpen ? "bg-slate-800 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-500"
+                )}>
+                    <Brain size={16} className={isThinking ? "animate-spin-slow" : ""} />
                 </div>
-                <span className="flex-1 text-left">{t.thinkingProcess}</span>
+                <span className={cn("flex-1 text-left transition-colors", isThinking && "text-indigo-600 dark:text-indigo-400")}>
+                    {label}
+                </span>
                 <div className={cn("transition-transform duration-500", isOpen ? "rotate-180 opacity-100" : "opacity-30")}>
                     <ChevronDown size={14} />
                 </div>
@@ -404,9 +424,24 @@ const ThinkingBlock: React.FC<{ content: string; theme: Theme; language: Languag
             {isOpen && (
                 <div className="px-5 pb-5 pt-0 text-sm border-t border-dashed border-slate-200 dark:border-slate-800 animate-in slide-in-from-top-2 duration-500">
                    <div className="h-4"></div>
-                   <MarkdownRenderer text={content} theme={theme} />
+                   <div className={cn("transition-opacity duration-300", isThinking ? "opacity-70" : "opacity-100")}>
+                        <MarkdownRenderer text={content} theme={theme} />
+                   </div>
                 </div>
             )}
+            
+            <style dangerouslySetInnerHTML={{ __html: `
+                @keyframes move-horizontal {
+                    0% { transform: translateX(-100%); }
+                    100% { transform: translateX(0%); }
+                }
+                .animate-move-horizontal {
+                    animation: move-horizontal 3s linear infinite;
+                }
+                .animate-spin-slow {
+                    animation: spin 3s linear infinite;
+                }
+            `}} />
         </div>
     );
 });
@@ -443,8 +478,11 @@ const parseMessageContent = (content: string, theme: Theme, language: Language, 
         } else {
             flushTools(false);
             if (part.startsWith('<thinking')) {
+                const isComplete = part.includes('</thinking>');
                 const inner = part.replace(/^<thinking>/i, '').replace(/<\/thinking>$/i, '');
-                renderedNodes.push(<ThinkingBlock key={`think-${index}`} content={inner} theme={theme} language={language} />);
+                // 只有当消息正在流式传输 且 思考标签未闭合时，才认为正在思考
+                const isThinkingActive = isStreamingMessage && !isComplete;
+                renderedNodes.push(<ThinkingBlock key={`think-${index}`} content={inner} theme={theme} language={language} isThinking={isThinkingActive} />);
             } else {
                 renderedNodes.push(<div key={`md-${index}`} className="markdown-body break-words w-full overflow-x-auto"><MarkdownRenderer text={part} theme={theme} /></div>);
             }
@@ -608,7 +646,8 @@ export const Chat: React.FC<ChatProps> = ({
               )}
             />
             <div className="absolute bottom-4 right-4 flex items-center gap-2">
-                <PixelButton theme={theme} onClick={isStreaming ? onStop : handleSend} disabled={(!input.trim() && pendingImages.length === 0) || !activeModel} className="w-11 h-11 !p-0 rounded-xl" variant={isStreaming ? 'destructive' : 'default'}>
+                {/* Fix: use supported variant names 'danger' and 'primary' from PixelButton definition */}
+                <PixelButton theme={theme} onClick={isStreaming ? onStop : handleSend} disabled={(!input.trim() && pendingImages.length === 0) || !activeModel} className="w-11 h-11 !p-0 rounded-xl" variant={isStreaming ? 'danger' : 'primary'}>
                     {isStreaming ? <X size={20} /> : <Send size={20} />}
                 </PixelButton>
             </div>
@@ -617,7 +656,8 @@ export const Chat: React.FC<ChatProps> = ({
           <div className="flex items-center justify-between px-2">
              <div className="flex gap-2 items-center">
                 {isMultimodal && (
-                    <PixelButton theme={theme} variant="outline" className="w-10 h-10 !p-0" onClick={() => fileInputRef.current?.click()} title={t.uploadImage}>
+                    /* Fix: use supported variant name 'secondary' instead of unsupported 'outline' */
+                    <PixelButton theme={theme} variant="secondary" className="w-10 h-10 !p-0" onClick={() => fileInputRef.current?.click()} title={t.uploadImage}>
                         <Paperclip size={20} />
                     </PixelButton>
                 )}
@@ -633,7 +673,8 @@ export const Chat: React.FC<ChatProps> = ({
                              <ThemeOption targetTheme={Theme.BIOLUMINESCENCE} icon={<Zap size={14}/>} label={t.themeBiolum} />
                         </div>
                     )}
-                    <PixelButton theme={theme} variant="outline" className="w-10 h-10 !p-0" onClick={() => { setShowLangMenu(false); setShowThemeMenu(!showThemeMenu); }} title={t.changeTheme}><Palette size={20} /></PixelButton>
+                    {/* Fix: use supported variant name 'secondary' instead of unsupported 'outline' */}
+                    <PixelButton theme={theme} variant="secondary" className="w-10 h-10 !p-0" onClick={() => { setShowLangMenu(false); setShowThemeMenu(!showThemeMenu); }} title={t.changeTheme}><Palette size={20} /></PixelButton>
                 </div>
                 <div className="relative" ref={langRef}>
                     {showLangMenu && (
@@ -644,11 +685,13 @@ export const Chat: React.FC<ChatProps> = ({
                              ))}
                         </div>
                     )}
-                    <PixelButton theme={theme} variant="outline" className="w-10 h-10 !p-0" onClick={() => { setShowThemeMenu(false); setShowLangMenu(!showLangMenu); }} title={t.changeLanguage}><Globe size={20} /></PixelButton>
+                    {/* Fix: use supported variant name 'secondary' instead of unsupported 'outline' */}
+                    <PixelButton theme={theme} variant="secondary" className="w-10 h-10 !p-0" onClick={() => { setShowThemeMenu(false); setShowLangMenu(!showLangMenu); }} title={t.changeLanguage}><Globe size={20} /></PixelButton>
                 </div>
              </div>
              <div className="flex gap-3">
-                <PixelButton theme={theme} variant="outline" className={cn("h-10 gap-2 px-4 transition-all rounded-xl", isDeepThinkingEnabled ? "bg-indigo-500/10 border-indigo-500 text-indigo-600 dark:text-indigo-400 shadow-lg shadow-indigo-500/10" : "opacity-40")} onClick={() => setIsDeepThinkingEnabled(!isDeepThinkingEnabled)}>
+                {/* Fix: use supported variant name 'secondary' instead of unsupported 'outline' */}
+                <PixelButton theme={theme} variant="secondary" className={cn("h-10 gap-2 px-4 transition-all rounded-xl", isDeepThinkingEnabled ? "bg-indigo-500/10 border-indigo-500 text-indigo-600 dark:text-indigo-400 shadow-lg shadow-indigo-500/10" : "opacity-40")} onClick={() => setIsDeepThinkingEnabled(!isDeepThinkingEnabled)}>
                     <BrainCircuit size={18} className={cn(isDeepThinkingEnabled && "animate-pulse")} /> <span className="text-xs font-black uppercase tracking-widest">{t.deepThinking}</span>
                 </PixelButton>
              </div>
