@@ -145,6 +145,4 @@ export interface AppState {
   providers: LLMProvider[];
   models: LLMModel[];
   activeModelId: string | null;
-  mascotState: 'idle' | 'thinking' | 'happy' | 'shocked';
-  aceConfig: AceConfig;
 }

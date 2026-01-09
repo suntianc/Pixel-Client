@@ -5,10 +5,9 @@ import { THEME_STYLES, TRANSLATIONS, getProviderIcon } from './constants';
 import { PixelButton, PixelSelect, PixelCard } from './components/PixelUI';
 import { ModelManager } from './components/ModelManager';
 import { Chat } from './components/Chat';
-import { Mascot } from './components/Mascot';
-import { Settings, Search, ChevronLeft, ChevronRight, Trash2, RefreshCcw, AlertCircle, MessageSquare, MessageSquareOff } from 'lucide-react';
+import { Settings, Search, ChevronLeft, ChevronRight, Trash2, RefreshCcw, AlertCircle } from 'lucide-react';
 import { ApiClient } from './services/apiClient';
-import { streamChatResponse, fetchMascotComment } from './services/llmService';
+import { streamChatResponse } from './services/llmService';
 
 const App: React.FC = () => {
   // --- State ---
@@ -39,10 +38,6 @@ const App: React.FC = () => {
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [mascotState, setMascotState] = useState<'idle' | 'thinking' | 'happy' | 'shocked'>('idle');
-  const [mascotComment, setMascotComment] = useState<string | null>(null);
-  const [isMascotEnabled, setIsMascotEnabled] = useState(true);
-
   const [searchQuery, setSearchQuery] = useState('');
   const [rainbowMode, setRainbowMode] = useState(false);
 
@@ -131,26 +126,8 @@ const App: React.FC = () => {
     }
   }, [models, activeModelId]);
 
-  useEffect(() => {
-    if (messages.length === 0) return;
-    if (!isMascotEnabled) return;
-    if (Math.random() < 0.3 && !mascotComment && activeModel) {
-        const fetchComment = async () => {
-            const systemPrompt = localStorage.getItem('pixel_mascot_system_prompt') || '';
-            const comment = await fetchMascotComment(messages, activeModel.modelId, systemPrompt);
-            if (comment) setMascotComment(comment);
-        };
-        fetchComment();
-    }
-  }, [messages.length, activeModel, isMascotEnabled]);
-
-  const handleMascotSpeechEnd = useCallback(() => {
-    setMascotComment(null);
-  }, []);
-
   const handleRainbowTrigger = () => {
       setRainbowMode(prev => !prev);
-      setMascotState('shocked');
   };
 
   useEffect(() => {
@@ -226,12 +203,11 @@ const App: React.FC = () => {
   const handleSendMessage = async (msg: Message, options?: { deepThinkingEnabled: boolean }) => {
      if (msg.role === 'assistant') {
          setMessages(prev => [...prev, msg]);
-         return; 
-     }
-     setMessages(prev => [...prev, msg]);
-     setIsStreaming(true);
-     setMascotState('thinking');
-     if (!activeModel || !activeProvider) {
+      return; 
+      }
+      setMessages(prev => [...prev, msg]);
+      setIsStreaming(true);
+      if (!activeModel || !activeProvider) {
          setIsStreaming(false);
          return;
      }
@@ -255,24 +231,21 @@ const App: React.FC = () => {
          activeSessionId, ac.signal, options?.deepThinkingEnabled
      );
 
-     if (abortControllerRef.current === ac) {
-         setIsStreaming(false);
-         setCurrentRequestId(null);
-         setMascotState('happy');
-         setTimeout(() => setMascotState('idle'), 2000);
-         refreshSessions();
-         abortControllerRef.current = null;
-     }
-  };
+      if (abortControllerRef.current === ac) {
+          setIsStreaming(false);
+          setCurrentRequestId(null);
+          refreshSessions();
+          abortControllerRef.current = null;
+      }
+   };
 
-  if (isLoading) {
-      return (
-          <div className={`fixed inset-0 z-50 flex items-center justify-center ${styles.bg} ${styles.text} flex-col gap-4`}>
-               <Mascot theme={theme} state="thinking" className="w-32 h-32 animate-bounce" />
-               <div className="text-2xl font-bold animate-pulse tracking-widest">INITIALIZING PIXELVERSE...</div>
-          </div>
-      );
-  }
+   if (isLoading) {
+       return (
+           <div className={`fixed inset-0 z-50 flex items-center justify-center ${styles.bg} ${styles.text} flex-col gap-4`}>
+                <div className="text-2xl font-bold animate-pulse tracking-widest">INITIALIZING PIXELVERSE...</div>
+           </div>
+       );
+   }
 
   // Determine root class for scrollbars and fonts
   const rootThemeClass = styles.type === 'pixel' ? 'theme-pixel' : 'theme-modern';
@@ -359,27 +332,6 @@ const App: React.FC = () => {
                 </div>
             ))}
         </div>
-
-        <div className="p-2 pb-8 flex items-end justify-center relative">
-            <Mascot 
-                theme={theme} 
-                state={mascotState} 
-                className={`w-32 h-32 ${isModern ? 'opacity-90 grayscale-[0.2]' : ''}`}
-                speechText={mascotComment}
-                onSpeechEnd={handleMascotSpeechEnd}
-            />
-            <button 
-                onClick={() => setIsMascotEnabled(!isMascotEnabled)}
-                className={`
-                    absolute bottom-4 right-4 p-1.5 ${styles.radius} ${styles.borderWidth} ${styles.borderColor} ${styles.shadow}
-                    transition-all active:translate-y-0.5 active:shadow-none
-                    ${isMascotEnabled ? 'bg-green-400 text-black' : 'bg-gray-400 text-gray-700'}
-                `}
-                title={isMascotEnabled ? "Mascot Speech: ON" : "Mascot Speech: OFF"}
-            >
-                {isMascotEnabled ? <MessageSquare size={14} /> : <MessageSquareOff size={14} />}
-            </button>
-        </div>
       </div>
 
       <div className="flex-1 flex flex-col relative z-10 h-full">
@@ -428,17 +380,16 @@ const App: React.FC = () => {
          </div>
 
          <div className="flex-1 overflow-hidden bg-white/5 relative">
-             <Chat 
-                theme={theme}
-                language={language}
-                messages={messages}
-                activeModel={activeModel}
-                provider={activeProvider}
-                onSendMessage={handleSendMessage}
-                onUpdateMessage={handleUpdateMessage}
-                setMascotState={setMascotState}
-                onTriggerRainbow={handleRainbowTrigger}
-                setTheme={setTheme}
+          <Chat 
+                 theme={theme}
+                 language={language}
+                 messages={messages}
+                 activeModel={activeModel}
+                 provider={activeProvider}
+                 onSendMessage={handleSendMessage}
+                 onUpdateMessage={handleUpdateMessage}
+                 onTriggerRainbow={handleRainbowTrigger}
+                 setTheme={setTheme}
                 setLanguage={setLanguage}
                 isMoonlightUnlocked={false}
                 searchQuery={searchQuery}

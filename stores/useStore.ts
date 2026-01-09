@@ -28,12 +28,6 @@ interface AppState {
   updateSession: (id: string, updates: Partial<ChatSession>) => void;
   removeSession: (id: string) => void;
 
-  // Mascot
-  mascotEnabled: boolean;
-  mascotSystemPrompt: string;
-  setMascotEnabled: (enabled: boolean) => void;
-  setMascotSystemPrompt: (prompt: string) => void;
-
   // UI State
   sidebarOpen: boolean;
   isModelManagerOpen: boolean;
@@ -83,12 +77,6 @@ export const useAppStore = create<AppState>()(
           set((state) => ({
             sessions: state.sessions.filter((s) => s.id !== id)
           })),
-
-        // Mascot
-        mascotEnabled: true,
-        mascotSystemPrompt: '',
-        setMascotEnabled: (mascotEnabled) => set({ mascotEnabled }),
-        setMascotSystemPrompt: (mascotSystemPrompt) => set({ mascotSystemPrompt }),
 
         // UI State
         sidebarOpen: true,

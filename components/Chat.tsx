@@ -21,7 +21,6 @@ interface ChatProps {
   provider: LLMProvider | null;
   onSendMessage: (msg: Message, options?: { deepThinkingEnabled: boolean }) => void;
   onUpdateMessage: (id: string, content: string) => void;
-  setMascotState: (state: 'idle' | 'thinking' | 'happy' | 'shocked') => void;
   onTriggerRainbow: () => void;
   setTheme: (theme: Theme) => void;
   setLanguage: (lang: Language) => void;
@@ -581,7 +580,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, la
 
 export const Chat: React.FC<ChatProps> = ({ 
   theme, language, messages, activeModel, provider,
-  onSendMessage, onUpdateMessage, setMascotState, onTriggerRainbow,
+  onSendMessage, onUpdateMessage, onTriggerRainbow,
   setTheme, setLanguage, isMoonlightUnlocked, searchQuery = '', onStop,
   isStreaming: externalIsStreaming = false
 }) => {
@@ -708,7 +707,6 @@ export const Chat: React.FC<ChatProps> = ({
     onSendMessage(userMsg, { deepThinkingEnabled: isDeepThinkingEnabled });
     setInput('');
     setPendingImages([]);
-    setMascotState('thinking');
     setLocalIsStreaming(true);
   };
 
