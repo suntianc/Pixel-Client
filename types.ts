@@ -100,16 +100,18 @@ export interface McpServer {
 }
 
 export interface McpStats {
-  servers: {
-    total: number;
+  totalServers: number;
+  serversByStatus: {
     running: number;
-    stopped: number;
-    error: number;
+    stopped?: number;
+    error?: number;
   };
-  tools: {
-    total: number;
-  };
-  uptime: number;
+  totalTools: number;
+  servers: Array<{
+    id: string;
+    status: 'running' | 'stopped' | 'error' | 'starting' | 'stopping';
+    toolCount: number;
+  }>;
 }
 
 export interface McpRegistrationConfig {

@@ -412,14 +412,14 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
              <div className="flex-1 overflow-y-auto flex gap-4">
                  {/* MCP Servers List */}
                  <div className="w-1/3 border-r-4 border-black pr-4 flex flex-col overflow-y-auto">
-                    <div className="mb-4 bg-black/10 p-2 border border-black/20">
-                        <div className="text-[10px] uppercase font-bold opacity-60 mb-1">{t.mcpStats}</div>
-                        <div className="flex justify-between text-xs">
-                            <span>{t.mcpServers}: {mcpStats?.servers?.total || 0}</span>
-                            <span className="text-green-600 font-bold">{t.running}: {mcpStats?.servers?.running || 0}</span>
-                            <span>{t.totalTools}: {mcpStats?.tools?.total || 0}</span>
-                        </div>
-                    </div>
+                     <div className="mb-4 bg-black/10 p-2 border border-black/20">
+                         <div className="text-[10px] uppercase font-bold opacity-60 mb-1">{t.mcpStats}</div>
+                         <div className="flex justify-between text-xs">
+                             <span>{t.mcpServers}: {mcpStats?.totalServers || 0}</span>
+                             <span className="text-green-600 font-bold">{t.running}: {mcpStats?.serversByStatus?.running || 0}</span>
+                             <span>{t.totalTools}: {mcpStats?.totalTools || 0}</span>
+                         </div>
+                     </div>
                     {mcpServers.map(server => (
                         <div 
                             key={server.id} 
@@ -438,7 +438,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
                                     {server.status.phase.toUpperCase()}
                                 </div>
                             </div>
-                            <div className="text-xs opacity-60 mt-1 flex gap-2">
+                             <div className="text-xs opacity-60 mt-1 flex gap-2">
                                 <span>{t.tools}: {server.tools?.length || 0}</span>
                             </div>
                         </div>
@@ -453,11 +453,16 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
                     {selectedMcpServer ? (
                         <div className="space-y-4">
                             <div className="flex justify-between items-center border-b-2 border-black mb-4 pb-2">
-                                <div>
+                                 <div>
                                     <h3 className="text-xl font-bold flex items-center gap-2">
                                         <Server className="text-blue-500"/> {selectedMcpServer.id}
                                     </h3>
-                                    <div className="text-xs opacity-50">{selectedMcpServer.status.message}</div>
+                                    <div className="text-xs opacity-50 flex items-center gap-2">
+                                        <span className={`px-1 rounded ${selectedMcpServer.status.phase === 'running' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                            {selectedMcpServer.status.phase.toUpperCase()}
+                                        </span>
+                                        <span>{t.tools}: {selectedMcpServer.tools?.length || 0}</span>
+                                    </div>
                                 </div>
                                 <div className="flex gap-2">
                                     <PixelButton theme={theme} variant="secondary" onClick={() => handleRestartMcpServer(selectedMcpServer.id)}>
@@ -469,19 +474,14 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
                                 </div>
                             </div>
 
-                            <div>
+                             <div>
                                 <h4 className="font-bold border-b border-black/20 mb-2 flex items-center gap-2"><Terminal size={14}/> {t.tools}</h4>
                                 <div className="space-y-2">
                                     {selectedMcpServer.tools && selectedMcpServer.tools.length > 0 ? (
                                         selectedMcpServer.tools.map(tool => (
                                             <div key={tool.name} className="p-2 border border-black/20 bg-white/5">
                                                 <div className="font-bold text-sm text-blue-600">{tool.name}</div>
-                                                <div className="text-xs opacity-70 mb-1">{tool.description}</div>
-                                                {tool.inputSchema && (
-                                                    <div className="bg-black/5 p-1 text-[10px] font-mono whitespace-pre-wrap">
-                                                        {JSON.stringify(tool.inputSchema, null, 2)}
-                                                    </div>
-                                                )}
+                                                <div className="text-xs opacity-70">{tool.description}</div>
                                             </div>
                                         ))
                                     ) : (

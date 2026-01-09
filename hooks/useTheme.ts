@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Theme } from '../types';
 import { THEME_STYLES } from '../constants';
 
-export const useTheme = (initialTheme: Theme = Theme.MODERN_DARK) => {
+export const useTheme = (initialTheme: Theme = Theme.DARK) => {
   const [theme, setTheme] = useState<Theme>(initialTheme);
   const styles = THEME_STYLES[theme];
 
