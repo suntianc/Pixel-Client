@@ -51,7 +51,10 @@ export const streamChatResponse = async (
           enabled: true,
           includeThoughtsInResponse: true, // Server should return thoughts
           enableStreamThoughts: true
-      } : undefined
+      } : undefined,
+      contextCompression: {
+          autoThreshold: true
+      }
   };
 
   try {
