@@ -197,6 +197,15 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
     // Cache for syntax highlighted code blocks to avoid re-rendering
     const codeBlockCache = useRef(new Map<string, React.ReactNode>());
 
+    // Preprocess LaTeX: convert DeepSeek's \[ \] and \( \) to $$ $ and $ $
+    const preprocessLaTeX = (content: string) => {
+        return content
+            .replace(/\\\[([\s\S]*?)\\\]/g, '$$$1$$')  // block formulas
+            .replace(/\\\(([\s\S]*?)\\\)/g, '$$$1$$'); // inline formulas
+    };
+
+    const processedText = useMemo(() => preprocessLaTeX(text), [text]);
+
     const getCachedCodeBlock = (code: string, lang: string): React.ReactNode => {
         const cacheKey = `${lang}:${code.substring(0, 200)}`;
         if (!codeBlockCache.current.has(cacheKey)) {
@@ -411,7 +420,7 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
                 }
             } as any}
         >
-            {text}
+            {processedText}
         </ReactMarkdown>
     );
 });
@@ -666,8 +675,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, la
     const isWide = msg.role !== 'user' && (msg.content?.includes('<thinking>') || msg.content?.includes('<tool_action') || /^\s*<!DOCTYPE html>/i.test(msg.content.trim()) || /^\s*<html/i.test(msg.content.trim()));
 
     const bubbleContainerClass = isAssistant
-        ? 'w-full pr-8'
-        : 'max-w-[85%] md:max-w-[70%] ml-auto';
+        ? 'max-w-[95%] md:max-w-[85%] lg:max-w-[80%]' // AI: 限制宽度，右侧留白
+        : 'max-w-[90%] md:max-w-[85%] ml-auto';       // User: 保持原样
 
     return (
         <div className={`flex gap-4 mb-6 ${isAssistant ? 'justify-start' : 'justify-end'} group animate-msg-in`}>
@@ -685,7 +694,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, la
                 <div
                     className={`
                         ${styles.radius} ${bubbleShape}
-                        ${isWide ? 'max-w-[95vw] md:max-w-[90%]' : 'max-w-[85vw] md:max-w-[65%]'}
+                        ${isWide ? 'max-w-[95vw] md:max-w-[90%]' : 'max-w-full inline-block text-left'}
                         ${bubbleColor}
                         overflow-hidden min-w-0 message-bubble
                         ${isAssistant ? '' : `${styles.borderWidth} ${styles.borderColor} ${styles.shadow} p-4`}
@@ -891,7 +900,7 @@ export const Chat: React.FC<ChatProps> = ({
     <div className={`flex flex-col h-full relative z-10 ${styles.font}`}>
       
       <div 
-        className="flex-1 overflow-y-auto overflow-x-auto p-3 sm:p-4 space-y-4 sm:space-y-6 relative z-10 pb-32" 
+        className="flex-1 overflow-y-auto overflow-x-auto p-3 sm:p-4 space-y-4 sm:space-y-6 relative z-10 pb-48 sm:pb-56" 
         ref={scrollRef}
         onScroll={handleScroll}
       >
@@ -927,10 +936,11 @@ export const Chat: React.FC<ChatProps> = ({
         )}
       </div>
 
-      <div className={`fixed bottom-0 left-0 right-0 p-4 z-50 pointer-events-none flex justify-center`}>
+      {/* Floating Input Area - Positioned at bottom of chat panel */}
+      <div className="absolute bottom-0 left-0 right-0 p-4 z-50 pointer-events-none flex justify-center items-end mb-0 sm:mb-12">
         <div className={`
-            w-full max-w-4xl pointer-events-auto 
-            mb-0 sm:mb-6 rounded-2xl p-2 transition-all duration-300
+            w-full max-w-3xl pointer-events-auto rounded-3xl
+            transition-all duration-300 ease-out
             ${styles.type === 'modern' ? 'shadow-2xl' : 'shadow-[8px_8px_0px_rgba(0,0,0,0.5)]'}
             ${styles.inputBg} 
         `}>
@@ -1005,17 +1015,15 @@ export const Chat: React.FC<ChatProps> = ({
                   {isStreaming ? <Square size={16} fill="currentColor" /> : <Send size={18} />}
               </button>
             </div>
-          </div>
-          
-          <div className="flex justify-end items-center mt-2">
-            {/* Streaming Indicator */}
+            
+            {/* Streaming Indicator - Compact */}
             {isStreaming && (
-              <div className={`flex items-center ${styles.text}`}>
-                <span className="animate-spin mr-2">★</span> {t.generating}
+              <div className={`absolute -top-8 right-2 flex items-center ${styles.text}`}>
+                <span className="animate-spin mr-1.5 text-xs">★</span> 
+                <span className="text-xs opacity-80">{t.generating}</span>
               </div>
             )}
           </div>
-          
         </div>
       </div>
     </div>

@@ -325,12 +325,19 @@ const AppContent: React.FC = () => {
   const rootThemeClass = styles.type === 'pixel' ? 'theme-pixel' : 'theme-modern';
 
   return (
-    <div className={`
-      flex h-screen w-screen overflow-hidden ${styles.bg} ${styles.text} transition-colors duration-500
-      ${!isModern ? 'scanline-effect' : ''}
-      ${rainbowMode ? 'rainbow-mode' : ''}
-      ${styles.font} ${rootThemeClass}
-    `}>
+    <div 
+      style={{
+        '--scrollbar-thumb': styles.type === 'pixel' ? styles.primary : 'rgba(156, 163, 175, 0.3)',
+        '--scrollbar-track': styles.type === 'pixel' ? styles.secondary : 'transparent',
+        '--scrollbar-hover': styles.type === 'pixel' ? styles.accent : 'rgba(156, 163, 175, 0.5)',
+      } as React.CSSProperties}
+      className={`
+        flex h-screen w-screen overflow-hidden ${styles.bg} ${styles.text}
+        ${!isModern ? 'scanline-effect' : ''}
+        ${rainbowMode ? 'rainbow-mode' : ''}
+        ${styles.font} ${rootThemeClass}
+      `}
+    >
 
       {showDeleteDialog && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm">
