@@ -8,8 +8,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- Inter for Modern, VT323 for Pixel -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=VT323&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Inter for Modern, VT323 for Pixel - with display swap for better loading -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=VT323&family=Noto+Sans+SC:wght@400;500;700&subset=chinese&display=swap" rel="stylesheet">
     <!-- KaTeX CSS for Math Rendering -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
     
@@ -53,7 +53,20 @@
         margin: 0;
         padding: 0;
       }
-      
+
+      /* Tailwind Font Classes */
+      .font-pixel-verse {
+        font-family: 'VT323', 'Noto Sans SC', monospace;
+        font-display: swap;
+      }
+
+      .font-sans {
+        font-family: 'Inter', 'Noto Sans SC', sans-serif;
+        font-display: swap;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
       .theme-pixel {
         font-family: 'VT323', 'Noto Sans SC', monospace;
         image-rendering: pixelated;
@@ -63,6 +76,7 @@
       .theme-modern {
         font-family: 'Inter', 'Noto Sans SC', sans-serif;
         -webkit-font-smoothing: antialiased;
+        font-display: swap;
       }
 
       /* Markdown Styling */
