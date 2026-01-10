@@ -218,15 +218,21 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
                     `}>
                         <div className="flex items-center gap-2">
                             {isPixel ? (
-                                <div className="flex gap-1 text-[10px] opacity-50">[TERM]</div>
+                                // Pixel 风格：复古字符画按钮
+                                <div className="flex gap-2 text-[10px] opacity-50 font-bold tracking-widest">
+                                    <span className="cursor-pointer hover:text-red-500">[x]</span>
+                                    <span className="cursor-pointer hover:text-yellow-500">[-]</span>
+                                    <span className="cursor-pointer hover:text-green-500">[ ]</span>
+                                </div>
                             ) : (
-                                <div className="flex gap-1.5">
-                                    <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f56]" />
-                                    <div className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]" />
-                                    <div className="w-2.5 h-2.5 rounded-full bg-[#27c93f]" />
+                                // Modern 风格：macOS 交通灯圆点
+                                <div className="flex gap-1.5 group-hover:opacity-100 opacity-60 transition-opacity">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f56] border border-[#e0443e]" />
+                                    <div className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e] border border-[#dea123]" />
+                                    <div className="w-2.5 h-2.5 rounded-full bg-[#27c93f] border border-[#1aab29]" />
                                 </div>
                             )}
-                            <span className="uppercase font-bold ml-2 opacity-70">{lang || 'TEXT'}</span>
+                            <span className="uppercase font-bold ml-2 opacity-70 text-xs">{lang || 'TEXT'}</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <CopyButton content={code} />
@@ -317,7 +323,9 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
                     <ol className="pl-6 space-y-1 list-decimal marker:text-gray-400 mb-4">{children}</ol>
                 ),
                 li: ({children}: any) => (
-                    <li className="break-words pl-1 mb-1 leading-7">{children}</li>
+                    <li className="break-words pl-1 my-1 leading-7 relative">
+                        {children}
+                    </li>
                 ),
 
                 // Heading styling
@@ -425,7 +433,7 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
     );
 });
 
-const ThinkingBlock: React.FC<{ content: string; theme: Theme; language: Language }> = React.memo(({ content, theme, language }) => {
+const ThinkingBlock: React.FC<{ content: string; theme: Theme; language: Language; isStreaming?: boolean }> = React.memo(({ content, theme, language, isStreaming = false }) => {
     const [isOpen, setIsOpen] = useState(false);
     const t = TRANSLATIONS[language];
     const styles = THEME_STYLES[theme];
@@ -436,6 +444,7 @@ const ThinkingBlock: React.FC<{ content: string; theme: Theme; language: Languag
         <div className={`
             my-2 overflow-hidden transition-all duration-300 ease-in-out
             ${styles.radius}
+            ${isStreaming ? 'animate-pulse border border-purple-500/30' : ''}
             ${isOpen ? 'bg-black/5 dark:bg-white/5' : 'bg-transparent'}
         `}>
             <button
@@ -596,7 +605,7 @@ const ToolActionBlock: React.FC<{
 });
 
 // ... (parseMessageContent remains the same) ...
-const parseMessageContent = (content: string, theme: Theme, language: Language, isStreamingMessage: boolean) => {
+const parseMessageContent = (content: string, theme: Theme, language: Language, isStreamingMessage: boolean, isLastMessage: boolean) => {
     const regex = /(<thinking>[\s\S]*?(?:<\/thinking>|$)|<tool_action[\s\S]*?(?:<\/tool_action>|$))/gi;
     const parts = content.split(regex);
     const renderedNodes: React.ReactNode[] = [];
@@ -634,7 +643,7 @@ const parseMessageContent = (content: string, theme: Theme, language: Language, 
             flushTools(false);
             if (part.startsWith('<thinking')) {
                 const inner = part.replace(/^<thinking>/i, '').replace(/<\/thinking>$/i, '');
-                renderedNodes.push(<ThinkingBlock key={`think-${index}`} content={inner} theme={theme} language={language} />);
+                renderedNodes.push(<ThinkingBlock key={`think-${index}`} content={inner} theme={theme} language={language} isStreaming={isStreamingMessage && isLastMessage} />);
             } else {
                 renderedNodes.push(
                     <div key={`md-${index}`} className="markdown-body break-words w-full overflow-x-auto">
@@ -729,7 +738,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, la
                                 /^\s*<!DOCTYPE html>/i.test(msg.content.trim()) || /^\s*<html/i.test(msg.content.trim()) ? (
                                     <HtmlPreviewBlock code={msg.content} theme={theme} defaultPreview={true} />
                                 ) : (
-                                    parseMessageContent(msg.content, theme, language, isStreaming && isLast)
+                                    parseMessageContent(msg.content, theme, language, isStreaming && isLast, isLast)
                                 )
                             ) : isStreaming && isLast ? (
                                 // Streaming skeleton placeholder to prevent layout shift
@@ -777,6 +786,7 @@ export const Chat: React.FC<ChatProps> = ({
 }) => {
   const [input, setInput] = useState('');
   const [localIsStreaming, setLocalIsStreaming] = useState(false);
+  const [showScrollButton, setShowScrollButton] = useState(false);
   
   // Image Upload State
   const [pendingImages, setPendingImages] = useState<string[]>([]);
@@ -805,6 +815,10 @@ export const Chat: React.FC<ChatProps> = ({
     const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
     const isAtBottom = distanceFromBottom <= 50;
     shouldAutoScrollRef.current = isAtBottom;
+    
+    // Show scroll to bottom button when user scrolls away from bottom
+    const distanceToBottom = scrollHeight - scrollTop - clientHeight;
+    setShowScrollButton(distanceToBottom > 300);
   }, []);
 
   useLayoutEffect(() => {
@@ -934,15 +948,33 @@ export const Chat: React.FC<ChatProps> = ({
              />
            ))
         )}
-      </div>
+       </div>
+
+      {/* Scroll to Bottom Button */}
+      {showScrollButton && (
+          <div className="absolute bottom-32 right-6 z-40 animate-bounce">
+              <button 
+                  onClick={() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })}
+                  className={`p-3 rounded-full shadow-lg transition-all ${styles.primary} ${styles.primaryText} hover:scale-110`}
+              >
+                  <ChevronDown size={20} />
+              </button>
+          </div>
+      )}
 
       {/* Floating Input Area - Positioned at bottom of chat panel */}
       <div className="absolute bottom-0 left-0 right-0 p-4 z-50 pointer-events-none flex justify-center items-end mb-0 sm:mb-12">
         <div className={`
             w-full max-w-3xl pointer-events-auto rounded-3xl
             transition-all duration-300 ease-out
-            ${styles.type === 'modern' ? 'shadow-2xl' : 'shadow-[8px_8px_0px_rgba(0,0,0,0.5)]'}
-            ${styles.inputBg} 
+            ${styles.type === 'modern' 
+              ? 'bg-white/10 dark:bg-black/30 backdrop-blur-xl border border-white/20 shadow-2xl' 
+              : styles.type === 'cyber'
+                ? 'bg-[#0A0A20]/90 backdrop-blur-lg border border-[#00FFE1]/30 shadow-[0_0_20px_rgba(0,255,225,0.3)]'
+                : styles.type === 'glass'
+                  ? 'bg-[#252528]/70 backdrop-blur-xl border border-white/10 shadow-xl'
+                  : `shadow-[8px_8px_0px_rgba(0,0,0,0.5)] ${styles.inputBg}`
+            }
         `}>
           {/* Pending Images Preview */}
           {pendingImages.length > 0 && (

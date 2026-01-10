@@ -242,6 +242,28 @@
         animation-delay: 0.15s;
         opacity: 0;
       }
+
+      /* === Global Text Selection Colors === */
+      ::selection {
+        background-color: var(--selection-bg, rgba(59, 130, 246, 0.5));
+        color: white;
+      }
+
+      /* Theme-specific selection colors */
+      .theme-pixel ::selection { background-color: #B957CE; color: white; }
+      .theme-cyber ::selection { background-color: #00FFE1; color: black; }
+      .theme-sunset ::selection { background-color: #FF6B35; color: white; }
+
+      /* === Inline Math Highlight === */
+      .katex {
+        font-size: 1.1em !important;
+      }
+      .theme-modern .katex-html {
+        background: rgba(255, 255, 255, 0.06);
+        padding: 0 4px;
+        border-radius: 4px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
     </style>
   <script type="importmap">
 {
