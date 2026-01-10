@@ -12,6 +12,7 @@ import rehypeRaw from 'rehype-raw';
 import { MermaidBlock } from './MermaidBlock';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { useVirtualizer } from '@tanstack/react-virtual';
 
 interface ChatProps {
   theme: Theme;
@@ -151,9 +152,54 @@ const getMediaType = (url: string) => {
 };
 
 
-// Memoized Markdown Renderer
+// Memoized Markdown Renderer with code block caching
 const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({ text, theme }) => {
     const styles = THEME_STYLES[theme];
+
+    // Cache for syntax highlighted code blocks to avoid re-rendering
+    const codeBlockCache = useRef(new Map<string, React.ReactNode>());
+
+    const getCachedCodeBlock = (code: string, lang: string): React.ReactNode => {
+        const cacheKey = `${lang}:${code.substring(0, 200)}`;
+        if (!codeBlockCache.current.has(cacheKey)) {
+            const result = (
+                <div className={`my-4 ${styles.borderWidth} ${styles.borderColor} ${styles.shadow} ${styles.radius} overflow-hidden`}>
+                    <div className="flex justify-between items-center bg-[#1e1e1e] text-gray-400 px-2 py-1 text-xs border-b border-white/10 font-bold font-mono">
+                        <div className="flex gap-2">
+                            <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                            <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                            <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                        </div>
+                        <span className="uppercase">{lang}</span>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <SyntaxHighlighter
+                            style={vscDarkPlus}
+                            language={lang}
+                            PreTag="div"
+                            customStyle={{ 
+                                margin: 0, 
+                                borderRadius: 0, 
+                                fontFamily: styles.type === 'pixel' ? '"VT323", monospace' : '"Menlo", monospace', 
+                                fontSize: '14px', 
+                                lineHeight: '1.4',
+                                background: '#1e1e1e' 
+                            }}
+                        >
+                            {code}
+                        </SyntaxHighlighter>
+                    </div>
+                </div>
+            );
+            codeBlockCache.current.set(cacheKey, result);
+            // Limit cache size to prevent memory issues
+            if (codeBlockCache.current.size > 100) {
+                const firstKey = codeBlockCache.current.keys().next().value;
+                codeBlockCache.current.delete(firstKey);
+            }
+        }
+        return codeBlockCache.current.get(cacheKey)!;
+    };
 
     return (
         <ReactMarkdown
@@ -237,35 +283,7 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
                     }
 
                     if (!inline && match) {
-                        return (
-                            <div className={`my-4 ${styles.borderWidth} ${styles.borderColor} ${styles.shadow} ${styles.radius} overflow-hidden`}>
-                                <div className="flex justify-between items-center bg-[#1e1e1e] text-gray-400 px-2 py-1 text-xs border-b border-white/10 font-bold font-mono">
-                                    <div className="flex gap-2">
-                                        <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                                        <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-                                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                                    </div>
-                                    <span className="uppercase">{lang}</span>
-                                </div>
-                                <div className="overflow-x-auto">
-                                    <SyntaxHighlighter
-                                        style={vscDarkPlus}
-                                        language={lang}
-                                        PreTag="div"
-                                        customStyle={{ 
-                                            margin: 0, 
-                                            borderRadius: 0, 
-                                            fontFamily: styles.type === 'pixel' ? '"VT323", monospace' : '"Menlo", monospace', 
-                                            fontSize: '14px', 
-                                            lineHeight: '1.4',
-                                            background: '#1e1e1e' 
-                                        }}
-                                    >
-                                        {String(children).replace(/\n$/, '')}
-                                    </SyntaxHighlighter>
-                                </div>
-                            </div>
-                        );
+                        return getCachedCodeBlock(String(children).replace(/\n$/, ''), lang);
                     }
                     
                     return <code className={className} {...props}>{children}</code>;
@@ -529,7 +547,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, la
               p-4 ${styles.borderWidth} ${styles.borderColor} ${styles.shadow} ${styles.radius} ${bubbleShape}
               ${isWide ? 'max-w-[98%] md:max-w-[95%]' : 'max-w-[90%] md:max-w-[75%]'}
               ${bubbleColor}
-              overflow-hidden min-w-0
+              overflow-hidden min-w-0 message-bubble
             `}
           >
             <div className="flex justify-between items-center mb-2 gap-2 opacity-80">
@@ -562,6 +580,17 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, la
                       ) : (
                           parseMessageContent(msg.content, theme, language, isStreaming && isLast)
                       )
+                  ) : isStreaming && isLast ? (
+                      // Streaming skeleton placeholder to prevent layout shift
+                      <div className="space-y-2 py-1">
+                          <div className="flex gap-1 items-center animate-pulse">
+                              <div className="h-3 bg-gray-400/30 rounded w-3"></div>
+                              <div className="h-3 bg-gray-400/30 rounded w-20"></div>
+                          </div>
+                          <div className="h-3 bg-gray-400/20 rounded w-3/4"></div>
+                          <div className="h-3 bg-gray-400/20 rounded w-1/2"></div>
+                          <div className="h-3 bg-gray-400/10 rounded w-5/6"></div>
+                      </div>
                   ) : (
                       <div className="flex items-center gap-2 py-2 opacity-70">
                           <Loader2 size={16} className="animate-spin" />
@@ -577,6 +606,72 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, la
         </div>
     );
 });
+
+// Virtualized message list for better performance with many messages
+const VirtualizedMessageList: React.FC<{
+    messages: Message[];
+    allMessages: Message[];
+    theme: Theme;
+    language: Language;
+    isStreaming: boolean;
+    scrollRef: React.RefObject<HTMLDivElement>;
+    shouldAutoScrollRef: React.MutableRefObject<boolean>;
+}> = ({ messages, allMessages, theme, language, isStreaming, scrollRef, shouldAutoScrollRef }) => {
+    const parentRef = useRef<HTMLDivElement>(null);
+    const count = messages.length;
+    
+    const rowVirtualizer = useVirtualizer({
+        count,
+        getScrollElement: () => parentRef.current,
+        estimateSize: () => 120, // Estimate average message height
+        overscan: 5,
+    });
+
+    useLayoutEffect(() => {
+        if (shouldAutoScrollRef.current) {
+            // Scroll to the last item when messages change during streaming
+            if (isStreaming && messages.length > 0) {
+                rowVirtualizer.scrollToIndex(messages.length - 1);
+            }
+        }
+    }, [messages, isStreaming, rowVirtualizer]);
+
+    return (
+        <div
+            ref={parentRef}
+            className="h-full w-full"
+            style={{
+                height: `${rowVirtualizer.getTotalSize()}px`,
+            }}
+        >
+            {rowVirtualizer.getVirtualItems().map((virtualItem) => {
+                const msg = messages[virtualItem.index];
+                const isLast = virtualItem.index === allMessages.length - 1;
+                return (
+                    <div
+                        key={msg.id}
+                        style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: `${virtualItem.size}px`,
+                            transform: `translateY(${virtualItem.start}px)`,
+                        }}
+                    >
+                        <MessageBubble
+                            msg={msg}
+                            theme={theme}
+                            language={language}
+                            isStreaming={isStreaming}
+                            isLast={isLast}
+                        />
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
 
 export const Chat: React.FC<ChatProps> = ({ 
   theme, language, messages, activeModel, provider,
@@ -628,13 +723,20 @@ export const Chat: React.FC<ChatProps> = ({
     );
   }, [messages, searchQuery]);
 
-  const handleScroll = () => {
+  // Debounced scroll handler for better performance
+  const handleScroll = useMemo(() => {
+    let scrollTimeout: ReturnType<typeof setTimeout>;
+    return () => {
       if (!scrollRef.current) return;
-      const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-      const isNearBottom = distanceFromBottom < 100;
-      shouldAutoScrollRef.current = isNearBottom;
-  };
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+        const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+        const isNearBottom = distanceFromBottom < 100;
+        shouldAutoScrollRef.current = isNearBottom;
+      }, 16); // ~60fps throttle
+    };
+  }, []);
 
   useLayoutEffect(() => {
       if (scrollRef.current && shouldAutoScrollRef.current && !searchQuery) {
@@ -764,20 +866,19 @@ export const Chat: React.FC<ChatProps> = ({
            </div>
         ) : displayMessages.length === 0 ? (
            <div className={`flex flex-col items-center justify-center h-full opacity-50 select-none ${styles.text}`}>
-             <div className="text-4xl mb-4">🔍</div>
-             <div className="text-xl">{t.noMessagesFound}</div>
+              <div className="text-4xl mb-4">🔍</div>
+              <div className="text-xl">{t.noMessagesFound}</div>
            </div>
         ) : (
-          displayMessages.map((msg, index) => (
-            <MessageBubble 
-                key={msg.id}
-                msg={msg}
-                theme={theme}
-                language={language}
-                isStreaming={isStreaming}
-                isLast={index === messages.length - 1}
-            />
-          ))
+           <VirtualizedMessageList
+               messages={displayMessages}
+               allMessages={messages}
+               theme={theme}
+               language={language}
+               isStreaming={isStreaming}
+               scrollRef={scrollRef}
+               shouldAutoScrollRef={shouldAutoScrollRef}
+           />
         )}
       </div>
 
