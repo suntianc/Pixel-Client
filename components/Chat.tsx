@@ -12,7 +12,6 @@ import rehypeRaw from 'rehype-raw';
 import { MermaidBlock } from './MermaidBlock';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { useVirtualizer } from '@tanstack/react-virtual';
 
 interface ChatProps {
   theme: Theme;
@@ -607,72 +606,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, la
     );
 });
 
-// Virtualized message list for better performance with many messages
-const VirtualizedMessageList: React.FC<{
-    messages: Message[];
-    allMessages: Message[];
-    theme: Theme;
-    language: Language;
-    isStreaming: boolean;
-    scrollRef: React.RefObject<HTMLDivElement>;
-    shouldAutoScrollRef: React.MutableRefObject<boolean>;
-}> = ({ messages, allMessages, theme, language, isStreaming, scrollRef, shouldAutoScrollRef }) => {
-    const parentRef = useRef<HTMLDivElement>(null);
-    const count = messages.length;
-    
-    const rowVirtualizer = useVirtualizer({
-        count,
-        getScrollElement: () => parentRef.current,
-        estimateSize: () => 120, // Estimate average message height
-        overscan: 5,
-    });
-
-    useLayoutEffect(() => {
-        if (shouldAutoScrollRef.current) {
-            // Scroll to the last item when messages change during streaming
-            if (isStreaming && messages.length > 0) {
-                rowVirtualizer.scrollToIndex(messages.length - 1);
-            }
-        }
-    }, [messages, isStreaming, rowVirtualizer]);
-
-    return (
-        <div
-            ref={parentRef}
-            className="h-full w-full"
-            style={{
-                height: `${rowVirtualizer.getTotalSize()}px`,
-            }}
-        >
-            {rowVirtualizer.getVirtualItems().map((virtualItem) => {
-                const msg = messages[virtualItem.index];
-                const isLast = virtualItem.index === allMessages.length - 1;
-                return (
-                    <div
-                        key={msg.id}
-                        style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            width: '100%',
-                            height: `${virtualItem.size}px`,
-                            transform: `translateY(${virtualItem.start}px)`,
-                        }}
-                    >
-                        <MessageBubble
-                            msg={msg}
-                            theme={theme}
-                            language={language}
-                            isStreaming={isStreaming}
-                            isLast={isLast}
-                        />
-                    </div>
-                );
-            })}
-        </div>
-    );
-};
-
 export const Chat: React.FC<ChatProps> = ({ 
   theme, language, messages, activeModel, provider,
   onSendMessage, onUpdateMessage, onTriggerRainbow,
@@ -861,8 +794,8 @@ export const Chat: React.FC<ChatProps> = ({
       >
         {messages.length === 0 ? (
            <div className={`flex flex-col items-center justify-center h-full opacity-50 select-none ${styles.text}`}>
-             <div className="text-6xl mb-4 animate-bounce">🎮</div>
-             <div className="text-xl">{t.selectModelStart}</div>
+              <div className="text-6xl mb-4 animate-bounce">🎮</div>
+              <div className="text-xl">{t.selectModelStart}</div>
            </div>
         ) : displayMessages.length === 0 ? (
            <div className={`flex flex-col items-center justify-center h-full opacity-50 select-none ${styles.text}`}>
@@ -870,15 +803,16 @@ export const Chat: React.FC<ChatProps> = ({
               <div className="text-xl">{t.noMessagesFound}</div>
            </div>
         ) : (
-           <VirtualizedMessageList
-               messages={displayMessages}
-               allMessages={messages}
-               theme={theme}
-               language={language}
-               isStreaming={isStreaming}
-               scrollRef={scrollRef}
-               shouldAutoScrollRef={shouldAutoScrollRef}
-           />
+           displayMessages.map((msg, index) => (
+             <MessageBubble 
+                 key={msg.id}
+                 msg={msg}
+                 theme={theme}
+                 language={language}
+                 isStreaming={isStreaming}
+                 isLast={index === messages.length - 1}
+             />
+           ))
         )}
       </div>
 
