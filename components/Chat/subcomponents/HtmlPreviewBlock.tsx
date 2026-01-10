@@ -14,8 +14,8 @@ export const HtmlPreviewBlock: React.FC<HtmlPreviewBlockProps> = ({ code, theme,
   const styles = THEME_STYLES[theme];
   
   return (
-    <div className={`my-4 ${styles.borderWidth} ${styles.borderColor} ${styles.shadow} ${styles.radius} overflow-hidden`}>
-      <div className={`flex justify-between items-center bg-[#1e1e1e] text-gray-400 px-2 py-1 text-xs border-b ${styles.borderColor} font-bold font-mono`}>
+    <div className={`my-4 ${styles.borderWidth} ${styles.borderColor} ${styles.shadow} ${styles.radius} overflow-hidden max-w-full`}>
+      <div className={`flex justify-between items-center bg-[#1e1e1e] text-gray-400 px-2 py-1 text-xs border-b ${styles.borderColor} font-bold font-mono shrink-0`}>
         <div className="flex items-center gap-2">
           <div className="flex gap-2">
             <div className="w-2 h-2 rounded-full bg-red-500"></div>
@@ -38,15 +38,17 @@ export const HtmlPreviewBlock: React.FC<HtmlPreviewBlockProps> = ({ code, theme,
       </div>
       
       {showPreview ? (
-        <iframe
-          srcDoc={code}
-          className="w-full h-64 bg-white"
-          title="HTML Preview"
-          sandbox="allow-scripts"
-        />
+        <div className="w-full h-64 overflow-x-auto overflow-y-hidden bg-white">
+          <iframe
+            srcDoc={code}
+            className="w-full h-full min-w-[100%]"
+            title="HTML Preview"
+            sandbox="allow-scripts"
+          />
+        </div>
       ) : (
-        <pre className="p-4 overflow-x-auto text-sm bg-[#1e1e1e] text-gray-300">
-          <code>{code}</code>
+        <pre className="p-4 overflow-x-auto text-sm bg-[#1e1e1e] text-gray-300 max-w-full">
+          <code className="break-all">{code}</code>
         </pre>
       )}
     </div>

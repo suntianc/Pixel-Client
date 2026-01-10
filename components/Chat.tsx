@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef, useMemo, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useLayoutEffect, useCallback } from 'react';
 import { Theme, Message, LLMModel, LLMProvider, Language } from '../types';
 import { PixelButton } from './PixelUI';
 import { THEME_STYLES, TRANSLATIONS } from '../constants';
@@ -81,8 +81,8 @@ const HtmlPreviewBlock: React.FC<HtmlPreviewBlockProps> = ({ code, theme, defaul
     const styles = THEME_STYLES[theme];
     
     return (
-        <div className={`my-4 ${styles.borderWidth} ${styles.borderColor} ${styles.shadow} ${styles.radius} overflow-hidden`}>
-             <div className={`flex justify-between items-center bg-[#1e1e1e] text-gray-400 px-2 py-1 text-xs border-b ${styles.borderColor} font-bold font-mono`}>
+        <div className={`my-4 ${styles.borderWidth} ${styles.borderColor} ${styles.shadow} ${styles.radius} overflow-hidden max-w-full`}>
+             <div className={`flex justify-between items-center bg-[#1e1e1e] text-gray-400 px-2 py-1 text-xs border-b ${styles.borderColor} font-bold font-mono shrink-0`}>
                 <div className="flex items-center gap-2">
                     <div className="flex gap-2">
                         <div className="w-2 h-2 rounded-full bg-red-500"></div>
@@ -105,14 +105,14 @@ const HtmlPreviewBlock: React.FC<HtmlPreviewBlockProps> = ({ code, theme, defaul
             </div>
             
             {showPreview ? (
-                 <div className="bg-white w-full h-[500px] relative resize-y overflow-auto">
+                 <div className="bg-white w-full h-[500px] relative resize-y overflow-x-auto overflow-y-hidden">
                      <iframe 
                         srcDoc={code}
-                        className="w-full h-full border-none"
+                        className="w-full h-full min-w-[100%] border-none"
                         sandbox="allow-scripts allow-forms allow-modals allow-popups allow-presentation allow-same-origin"
                         title="HTML Preview"
-                     />
-                 </div>
+                    />
+                </div>
             ) : (
                 <div className="max-h-[500px] overflow-auto">
                     <SyntaxHighlighter
@@ -125,8 +125,12 @@ const HtmlPreviewBlock: React.FC<HtmlPreviewBlockProps> = ({ code, theme, defaul
                             fontFamily: '"VT323", monospace', 
                             fontSize: '16px', 
                             lineHeight: '1.4',
-                            background: '#1e1e1e' 
+                            background: '#1e1e1e',
+                            maxWidth: '100%',
+                            wordBreak: 'break-all',
+                            overflowWrap: 'break-word'
                         }}
+                        wrapLines={true}
                     >
                         {code}
                     </SyntaxHighlighter>
@@ -218,7 +222,28 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
                 body: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
                 
                 // Ensure Paragraphs Wrap
-                p: ({children}: any) => <p className="mb-2 break-words whitespace-pre-wrap">{children}</p>,
+                p: ({children}: any) => <p className="mb-3 sm:mb-4 last:mb-0 leading-relaxed break-words whitespace-pre-wrap">{children}</p>,
+                
+                // List styling
+                ul: ({children}: any) => (
+                  <ul className="pl-6 space-y-2 list-disc mb-4">{children}</ul>
+                ),
+                ol: ({children}: any) => (
+                  <ol className="pl-6 space-y-2 list-decimal mb-4">{children}</ol>
+                ),
+                li: ({children}: any) => (
+                  <li className="break-words">{children}</li>
+                ),
+                
+                // Heading styling
+                h1: ({children}: any) => <h1 className="text-xl sm:text-2xl font-bold mb-4 mt-6">{children}</h1>,
+                h2: ({children}: any) => <h2 className="text-lg sm:text-xl font-bold mb-3 mt-5">{children}</h2>,
+                h3: ({children}: any) => <h3 className="text-base sm:text-lg font-bold mb-2 mt-4">{children}</h3>,
+                
+                // Blockquote styling
+                blockquote: ({children}: any) => (
+                  <blockquote className="border-l-4 border-gray-400 pl-4 italic my-4 opacity-80">{children}</blockquote>
+                ),
                 
                 video: ({node, src, ...props}: any) => (
                      <MediaFrame theme={theme} label="Video Feed" icon={<Play size={14} />}>
@@ -544,7 +569,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, la
           <div 
             className={`
               p-4 ${styles.borderWidth} ${styles.borderColor} ${styles.shadow} ${styles.radius} ${bubbleShape}
-              ${isWide ? 'max-w-[98%] md:max-w-[95%]' : 'max-w-[90%] md:max-w-[75%]'}
+              ${isWide ? 'max-w-[95vw] md:max-w-[90%]' : 'max-w-[85vw] md:max-w-[65%]'}
               ${bubbleColor}
               overflow-hidden min-w-0 message-bubble
             `}
@@ -571,7 +596,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, la
 
             <div className={`leading-relaxed text-sm ${styles.font} break-words min-w-0`}>
               {msg.role === 'user' ? (
-                  <div className="whitespace-pre-wrap break-all">{msg.content}</div>
+                  <div className="whitespace-pre-wrap break-words">{msg.content}</div>
               ) : (
                   msg.content ? (
                       isHtml ? (
@@ -656,26 +681,20 @@ export const Chat: React.FC<ChatProps> = ({
     );
   }, [messages, searchQuery]);
 
-  // Debounced scroll handler for better performance
-  const handleScroll = useMemo(() => {
-    let scrollTimeout: ReturnType<typeof setTimeout>;
-    return () => {
-      if (!scrollRef.current) return;
-      clearTimeout(scrollTimeout);
-      scrollTimeout = setTimeout(() => {
-        const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-        const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-        const isNearBottom = distanceFromBottom < 100;
-        shouldAutoScrollRef.current = isNearBottom;
-      }, 16); // ~60fps throttle
-    };
+  // Scroll handler: detect user scroll position to control auto-scroll behavior
+  const handleScroll = useCallback(() => {
+    if (!scrollRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+    const isAtBottom = distanceFromBottom <= 50;
+    shouldAutoScrollRef.current = isAtBottom;
   }, []);
 
   useLayoutEffect(() => {
-      if (scrollRef.current && shouldAutoScrollRef.current && !searchQuery) {
-          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-      }
-  }, [messages, searchQuery]);
+    if (scrollRef.current && shouldAutoScrollRef.current && !searchQuery) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, searchQuery, isStreaming]);
 
   // Image Handling Functions
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -788,7 +807,7 @@ export const Chat: React.FC<ChatProps> = ({
     <div className={`flex flex-col h-full relative z-10 ${styles.font}`}>
       
       <div 
-        className="flex-1 overflow-y-auto p-4 space-y-6 relative z-10" 
+        className="flex-1 overflow-y-auto overflow-x-auto p-3 sm:p-4 space-y-4 sm:space-y-6 relative z-10" 
         ref={scrollRef}
         onScroll={handleScroll}
       >

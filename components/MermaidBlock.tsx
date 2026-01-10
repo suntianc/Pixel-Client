@@ -134,7 +134,7 @@ export const MermaidBlock: React.FC<MermaidBlockProps> = ({ code, theme }) => {
 
   return (
     <div className={`
-        relative my-4 p-4 border-2 border-black overflow-x-auto
+        relative my-4 p-4 border-2 border-black overflow-x-auto max-w-full
         ${theme === Theme.LIGHT ? 'bg-white/50' : 'bg-black/20'}
     `}>
         {loading && (

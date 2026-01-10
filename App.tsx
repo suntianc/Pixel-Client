@@ -321,8 +321,9 @@ const AppContent: React.FC = () => {
 
       <div className={`
         ${sidebarOpen ? 'w-64' : 'w-0'}
+        shrink-0
         ${styles.sidebarBorder} flex flex-col
-        ${styles.secondary} relative z-20 overflow-hidden whitespace-nowrap transition-all duration-300
+        ${styles.secondary} relative z-20 overflow-hidden transition-all duration-300 min-w-0
       `}>
         <div className={`p-4 ${styles.headerBorder} flex justify-between items-center min-h-[60px]`}>
           <h1 className={`text-2xl font-bold ${styles.text} tracking-tighter`}>PixelVerse</h1>
@@ -376,7 +377,7 @@ const AppContent: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col relative z-10 h-full">
+      <div className="flex-1 flex flex-col relative z-10 h-full min-w-0">
         <div className={`h-14 min-h-[56px] ${styles.headerBorder} flex items-center px-4 justify-between ${styles.secondary}`}>
           <div className="flex items-center gap-4">
             <PixelButton
