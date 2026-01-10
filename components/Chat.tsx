@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useMemo, useLayoutEffect } from 're
 import { Theme, Message, LLMModel, LLMProvider, Language } from '../types';
 import { PixelButton } from './PixelUI';
 import { THEME_STYLES, TRANSLATIONS } from '../constants';
-import { Send, Copy, Check, Moon, Sun, Star, Cpu, Globe, Palette, Loader2, Brain, ChevronDown, ChevronRight, BrainCircuit, Play, Maximize, FileCode, Box, Terminal, Paperclip, X, Square, Circle, Zap, Sunset } from 'lucide-react';
+import { Send, Copy, Check, Moon, Sun, Star, Cpu, Globe, Palette, Loader2, Brain, ChevronDown, ChevronRight, Play, Maximize, FileCode, Box, Terminal, Paperclip, X, Square, Circle, Zap, Sunset } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -588,7 +588,6 @@ export const Chat: React.FC<ChatProps> = ({
   const [localIsStreaming, setLocalIsStreaming] = useState(false);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [showLangMenu, setShowLangMenu] = useState(false);
-  const [isDeepThinkingEnabled, setIsDeepThinkingEnabled] = useState(false);
   
   // Image Upload State
   const [pendingImages, setPendingImages] = useState<string[]>([]);
@@ -704,7 +703,7 @@ export const Chat: React.FC<ChatProps> = ({
       timestamp: Date.now(),
       images: pendingImages.length > 0 ? [...pendingImages] : undefined
     };
-    onSendMessage(userMsg, { deepThinkingEnabled: isDeepThinkingEnabled });
+    onSendMessage(userMsg, { deepThinkingEnabled: true });
     setInput('');
     setPendingImages([]);
     setLocalIsStreaming(true);
@@ -901,27 +900,8 @@ export const Chat: React.FC<ChatProps> = ({
                 </div>
              </div>
              
-             <div className="flex gap-2">
-                {!isStreaming && (
-                    <div className="relative group">
-                        <PixelButton
-                            theme={theme}
-                            variant="secondary" 
-                            className={`
-                                w-9 h-9 !p-0 flex items-center justify-center transition-all duration-300
-                                ${isDeepThinkingEnabled 
-                                    ? 'bg-green-600 border-green-800 text-white shadow-[inset_0_0_10px_rgba(255,255,255,0.3)]' 
-                                    : 'opacity-50 grayscale hover:grayscale-0 hover:opacity-100'}
-                            `}
-                            title={t.deepThinking}
-                            onClick={() => setIsDeepThinkingEnabled(!isDeepThinkingEnabled)}
-                        >
-                            <BrainCircuit size={20} className={isDeepThinkingEnabled ? 'animate-pulse' : ''} />
-                        </PixelButton>
-                    </div>
-                )}
-
-                {isStreaming && (
+              <div className="flex gap-2">
+                 {isStreaming && (
                    <div className={`flex items-center mr-4 ${styles.text}`}>
                      <span className="animate-spin mr-2">★</span> {t.generating}
                    </div>
