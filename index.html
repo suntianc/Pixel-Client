@@ -11,7 +11,7 @@
     <!-- Inter for Modern, VT323 for Pixel - with display swap for better loading -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=VT323&family=Noto+Sans+SC:wght@400;500;700&subset=chinese&display=swap" rel="stylesheet">
     <!-- KaTeX CSS for Math Rendering -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.minsha384-n8.css" integrity="MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
     
     <!-- Mermaid JS (Global Script for Stability) -->
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js"></script>
@@ -100,6 +100,15 @@
         padding: 0.2em 0.4em;
         border-radius: 4px;
         font-size: 0.85em;
+      }
+
+      /* Dialog Font Adjustments - English slightly larger to match Chinese */
+      /* Targets the delete dialog and modal content */
+      .z-\[80\] .font-bold,
+      .z-\[80\] p,
+      .z-\[80\] span {
+        /* Increase English text size by 3% in dialogs for visual consistency */
+        font-size: 1.03em;
       }
 
       /* Pixel Art Utilities */

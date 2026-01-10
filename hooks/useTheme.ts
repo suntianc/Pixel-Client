@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Theme } from '../types';
 import { THEME_STYLES } from '../constants';
 
 export const useTheme = (initialTheme: Theme = Theme.DARK) => {
   const [theme, setTheme] = useState<Theme>(initialTheme);
-  const styles = THEME_STYLES[theme];
+  const styles = useMemo(() => THEME_STYLES[theme], [theme]);
 
   useEffect(() => {
     const saved = localStorage.getItem('pixel_theme') as Theme;

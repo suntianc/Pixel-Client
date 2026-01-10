@@ -47,7 +47,7 @@ export interface ProviderTestResponse {
   success: boolean;
   message: string;
   latency?: number;
-  details?: any;
+  details?: Record<string, unknown>;
 }
 
 export type ModelType = 'chat' | 'embedding' | 'rerank' | 'multimodal';
@@ -75,7 +75,11 @@ export interface AceConfig {
 export interface McpTool {
   name: string;
   description: string;
-  inputSchema?: any;
+  inputSchema?: {
+    type: string;
+    properties?: Record<string, unknown>;
+    required?: string[];
+  };
 }
 
 export interface McpServerStatus {
@@ -128,14 +132,14 @@ export interface ApiSession {
   status: string;
   createdAt: number;
   lastActivityAt: number;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 export interface SessionHistory {
   sessionState: ApiSession;
   messages?: Message[]; // Added to support history retrieval
-  telemetry: any[];
-  directives: any[];
+  telemetry: Array<{ timestamp: number; event: string; data?: Record<string, unknown> }>;
+  directives: Array<{ type: string; content: string; timestamp?: number }>;
 }
 
 export interface AppState {

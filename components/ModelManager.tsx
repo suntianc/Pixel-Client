@@ -14,6 +14,7 @@ interface ModelManagerProps {
   onUpdateProviders: (providers: LLMProvider[]) => void;
   onUpdateModels: (models: LLMModel[]) => void;
   onClose: () => void;
+  showToast?: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
 }
 
 export const ModelManager: React.FC<ModelManagerProps> = ({
@@ -23,8 +24,16 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
   models,
   onUpdateProviders,
   onUpdateModels,
-  onClose
+  onClose,
+  showToast
 }) => {
+  // Helper function to show toast notifications
+  const notify = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
+    if (showToast) {
+      showToast(message, type);
+    }
+  };
+
   const [activeTab, setActiveTab] = useState<'providers' | 'models' | 'mcp'>('providers');
   const [testStatus, setTestStatus] = useState<string | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -69,17 +78,21 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
   // Fetch Data on Open
   useEffect(() => {
       const loadData = async () => {
-          const fetchedProviders = await ApiClient.getProviders();
-          onUpdateProviders(fetchedProviders);
-          
-          const fetchedModels = await ApiClient.getAllModels();
-          onUpdateModels(fetchedModels);
+          try {
+              const fetchedProviders = await ApiClient.getProviders();
+              onUpdateProviders(fetchedProviders);
+              
+              const fetchedModels = await ApiClient.getAllModels();
+              onUpdateModels(fetchedModels);
 
-           const adapters = await ApiClient.getProviderAdapters();
-           setProviderAdapters(adapters);
-       };
-       loadData();
-   }, []);
+              const adapters = await ApiClient.getProviderAdapters();
+              setProviderAdapters(adapters);
+          } catch (error) {
+              console.error("Failed to load data:", error);
+          }
+      };
+      loadData();
+  }, [onUpdateProviders, onUpdateModels]);
 
   // Fetch MCP Data when tab is active
   useEffect(() => {
@@ -122,7 +135,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
         }
         setNewProvider({ type: 'custom', name: '', baseUrl: '', apiKey: '' });
     } catch (e) {
-        alert(t.saveFailed);
+        notify(t.saveFailed, 'error');
     }
   };
 
@@ -217,7 +230,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
         });
         setModelTestResult(null);
     } catch (e) {
-        alert(t.saveFailed);
+        notify(t.saveFailed, 'error');
     }
   };
 
@@ -229,7 +242,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
         onUpdateModels(models.filter(m => m.providerId !== id));
         if (editingProviderId === id) handleCancelProvider();
     } catch (e) {
-        alert(t.saveFailed);
+        notify(t.saveFailed, 'error');
     }
   };
 
@@ -240,7 +253,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
           onUpdateModels(models.filter(x => x.id !== model.id));
           if (editingModelId === model.id) handleCancelModel();
       } catch (e) {
-          alert(t.saveFailed);
+          notify(t.saveFailed, 'error');
       }
   };
 
@@ -279,7 +292,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
           try {
               envObj = JSON.parse(newMcpServer.env);
           } catch(e) {
-              alert('Invalid JSON in Env Variables');
+              notify('Invalid JSON in Env Variables', 'error');
               return;
           }
 
@@ -295,7 +308,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
           await loadMcpData();
           setNewMcpServer({ id: '', command: '', args: '', env: '{}' });
       } catch(e) {
-          alert(t.saveFailed);
+          notify(t.saveFailed, 'error');
       }
   };
 
@@ -306,7 +319,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
           await loadMcpData();
           if (selectedMcpServer?.id === id) setSelectedMcpServer(null);
       } catch(e) {
-          alert(t.saveFailed);
+          notify(t.saveFailed, 'error');
       }
   };
 
@@ -315,7 +328,7 @@ export const ModelManager: React.FC<ModelManagerProps> = ({
           await ApiClient.Mcp.restartServer(id);
           await loadMcpData();
       } catch(e) {
-          alert(t.saveFailed);
+          notify(t.saveFailed, 'error');
       }
   }
 

@@ -8,6 +8,28 @@ import React from 'react';
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:12345';
 export const API_KEY = import.meta.env.VITE_API_KEY || '';
 
+// API Configuration
+export const API_TIMEOUT = 5000; // milliseconds
+export const CACHE_TTL = 3 * 60 * 1000; // 3 minutes
+
+// Model Default Values
+export const DEFAULT_TEMPERATURE = 0.7;
+export const DEFAULT_CONTEXT_LENGTH = 4096;
+export const DEFAULT_MAX_TOKENS = 2048;
+export const DEFAULT_DIMENSIONS = 1536;
+export const MAX_CONTEXT_LENGTH = 200000;
+export const EMBEDDING_DIMENSIONS = [768, 1024, 1536, 2048, 3072, 4096] as const;
+
+// LLM Service Configuration
+export const DEFAULT_AGENT_ID = 'pixel-verse-agent';
+export const DEFAULT_CONVERSATION_ID = 'pixel-session-1';
+export const DEFAULT_USER_ID = 'pixel-user';
+
+// UI Constants
+export const COPY_BUTTON_TIMEOUT = 2000; // milliseconds
+export const SCROLL_THRESHOLD = 100; // pixels
+export const MAX_MESSAGES_HISTORY = 100;
+
 export const INITIAL_PROVIDERS: LLMProvider[] = []; 
 export const INITIAL_MODELS: LLMModel[] = []; 
 
