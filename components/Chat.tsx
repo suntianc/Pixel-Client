@@ -53,6 +53,40 @@ const CopyButton: React.FC<{ content: string }> = ({ content }) => {
   );
 };
 
+// Suggestion Grid Component for empty state
+const SuggestionGrid: React.FC<{ onSelect: (text: string) => void; theme: Theme }> = ({ onSelect, theme }) => {
+  const styles = THEME_STYLES[theme];
+  const isPixel = styles.type === 'pixel';
+
+  const suggestions = [
+    { icon: "💻", text: "解释这段代码的逻辑" },
+    { icon: "🎨", text: "为我的项目设计配色方案" },
+    { icon: "📝", text: "帮我润色这篇文档" },
+    { icon: "🐛", text: "如何调试 React useEffect 闭包陷阱?" }
+  ];
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl mx-auto mt-8 px-4 animate-suggestion-in">
+      {suggestions.map((s, i) => (
+        <button 
+          key={i}
+          onClick={() => onSelect(s.text)}
+          className={`
+            p-4 text-left rounded-xl transition-all duration-200
+            ${isPixel 
+              ? 'border-2 border-current hover:translate-x-1 hover:-translate-y-1' 
+              : 'border border-white/10 bg-white/5 hover:bg-white/10 hover:shadow-lg hover:-translate-y-0.5'
+            }
+          `}
+        >
+          <div className="text-xl mb-2">{s.icon}</div>
+          <div className="text-sm opacity-80">{s.text}</div>
+        </button>
+      ))}
+    </div>
+  );
+};
+
 // --- MEDIA COMPONENTS ---
 
 const MediaFrame: React.FC<{ theme: Theme; children: React.ReactNode; label: string; icon: React.ReactNode }> = ({ theme, children, label, icon }) => {
@@ -158,6 +192,7 @@ const getMediaType = (url: string) => {
 // Memoized Markdown Renderer with code block caching
 const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({ text, theme }) => {
     const styles = THEME_STYLES[theme];
+    const isPixel = styles.type === 'pixel';
 
     // Cache for syntax highlighted code blocks to avoid re-rendering
     const codeBlockCache = useRef(new Map<string, React.ReactNode>());
@@ -167,26 +202,39 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
         if (!codeBlockCache.current.has(cacheKey)) {
             const result = (
                 <div className={`my-4 ${styles.borderWidth} ${styles.borderColor} ${styles.shadow} ${styles.radius} overflow-hidden`}>
-                    <div className="flex justify-between items-center bg-[#1e1e1e] text-gray-400 px-2 py-1 text-xs border-b border-white/10 font-bold font-mono">
-                        <div className="flex gap-2">
-                            <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                            <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-                            <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                    <div className={`
+                        flex justify-between items-center px-3 py-1.5 text-xs select-none
+                        bg-[#2d2d2d] border-b border-black/50 text-gray-400
+                        ${isPixel ? 'font-pixel-verse' : 'font-sans'}
+                    `}>
+                        <div className="flex items-center gap-2">
+                            {isPixel ? (
+                                <div className="flex gap-1 text-[10px] opacity-50">[TERM]</div>
+                            ) : (
+                                <div className="flex gap-1.5">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f56]" />
+                                    <div className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]" />
+                                    <div className="w-2.5 h-2.5 rounded-full bg-[#27c93f]" />
+                                </div>
+                            )}
+                            <span className="uppercase font-bold ml-2 opacity-70">{lang || 'TEXT'}</span>
                         </div>
-                        <span className="uppercase">{lang}</span>
+                        <div className="flex items-center gap-2">
+                            <CopyButton content={code} />
+                        </div>
                     </div>
                     <div className="overflow-x-auto">
                         <SyntaxHighlighter
                             style={vscDarkPlus}
                             language={lang}
                             PreTag="div"
-                            customStyle={{ 
-                                margin: 0, 
-                                borderRadius: 0, 
-                                fontFamily: styles.type === 'pixel' ? '"VT323", monospace' : '"Menlo", monospace', 
-                                fontSize: '14px', 
+                            customStyle={{
+                                margin: 0,
+                                borderRadius: 0,
+                                fontFamily: isPixel ? '"VT323", monospace' : '"Menlo", monospace',
+                                fontSize: '14px',
                                 lineHeight: '1.4',
-                                background: '#1e1e1e' 
+                                background: '#1e1e1e'
                             }}
                         >
                             {code}
@@ -198,7 +246,9 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
             // Limit cache size to prevent memory issues
             if (codeBlockCache.current.size > 100) {
                 const firstKey = codeBlockCache.current.keys().next().value;
-                codeBlockCache.current.delete(firstKey);
+                if (firstKey) {
+                    codeBlockCache.current.delete(firstKey);
+                }
             }
         }
         return codeBlockCache.current.get(cacheKey)!;
@@ -220,29 +270,64 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
                 form: () => null,
                 html: ({ children }: { children?: React.ReactNode }) => <>{children}</>, 
                 body: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
-                
+
+                // Table styling
+                table: ({children}: any) => (
+                    <div className="overflow-x-auto my-4 rounded-lg border border-white/10">
+                        <table className="min-w-full text-left text-sm whitespace-nowrap">
+                            {children}
+                        </table>
+                    </div>
+                ),
+                thead: ({children}: any) => (
+                    <thead className="bg-black/10 font-bold uppercase tracking-wider border-b border-white/10">
+                        {children}
+                    </thead>
+                ),
+                tbody: ({children}: any) => <tbody className="divide-y divide-white/5">{children}</tbody>,
+                tr: ({children}: any) => (
+                    <tr className="hover:bg-white/5 transition-colors last:border-0">
+                        {children}
+                    </tr>
+                ),
+                td: ({children}: any) => <td className="px-4 py-2">{children}</td>,
+                th: ({children}: any) => <th className="px-4 py-2 text-xs opacity-70">{children}</th>,
+
                 // Ensure Paragraphs Wrap
-                p: ({children}: any) => <p className="mb-3 sm:mb-4 last:mb-0 leading-relaxed break-words whitespace-pre-wrap">{children}</p>,
-                
-                // List styling
+                p: ({children}: any) => (
+                    <p className={`mb-4 last:mb-0 leading-7 ${isPixel ? '' : 'tracking-wide text-[0.95rem]'}`}>
+                        {children}
+                    </p>
+                ),
+
+                // List styling with improved marker colors
                 ul: ({children}: any) => (
-                  <ul className="pl-6 space-y-2 list-disc mb-4">{children}</ul>
+                    <ul className="pl-6 space-y-1 list-disc marker:text-gray-400 mb-4">{children}</ul>
                 ),
                 ol: ({children}: any) => (
-                  <ol className="pl-6 space-y-2 list-decimal mb-4">{children}</ol>
+                    <ol className="pl-6 space-y-1 list-decimal marker:text-gray-400 mb-4">{children}</ol>
                 ),
                 li: ({children}: any) => (
-                  <li className="break-words">{children}</li>
+                    <li className="break-words pl-1 mb-1 leading-7">{children}</li>
                 ),
-                
+
                 // Heading styling
-                h1: ({children}: any) => <h1 className="text-xl sm:text-2xl font-bold mb-4 mt-6">{children}</h1>,
-                h2: ({children}: any) => <h2 className="text-lg sm:text-xl font-bold mb-3 mt-5">{children}</h2>,
+                h1: ({children}: any) => (
+                    <h1 className="text-xl font-bold mb-4 mt-6 pb-2 border-b border-white/10">{children}</h1>
+                ),
+                h2: ({children}: any) => (
+                    <h2 className="text-lg font-bold mb-3 mt-5">{children}</h2>
+                ),
                 h3: ({children}: any) => <h3 className="text-base sm:text-lg font-bold mb-2 mt-4">{children}</h3>,
-                
+
                 // Blockquote styling
                 blockquote: ({children}: any) => (
-                  <blockquote className="border-l-4 border-gray-400 pl-4 italic my-4 opacity-80">{children}</blockquote>
+                    <blockquote className={`
+                        border-l-4 pl-4 py-1 my-4 italic opacity-80 bg-white/5 rounded-r
+                        ${isPixel ? 'border-current' : 'border-blue-500'}
+                    `}>
+                        {children}
+                    </blockquote>
                 ),
                 
                 video: ({node, src, ...props}: any) => (
@@ -297,7 +382,7 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
                     const match = /language-(\w+)/.exec(className || '');
                     const lang = match ? match[1] : '';
                     const isMermaid = lang === 'mermaid';
-                    
+
                     if (!inline && isMermaid) {
                         return <MermaidBlock code={String(children).replace(/\n$/, '')} theme={theme} />;
                     }
@@ -309,8 +394,20 @@ const MarkdownRenderer: React.FC<{ text: string; theme: Theme }> = React.memo(({
                     if (!inline && match) {
                         return getCachedCodeBlock(String(children).replace(/\n$/, ''), lang);
                     }
-                    
-                    return <code className={className} {...props}>{children}</code>;
+
+                    // Inline code with enhanced contrast
+                    if (inline) {
+                        return (
+                            <code className={`
+                                px-1.5 py-0.5 rounded text-[0.85em] font-mono mx-1
+                                ${isPixel 
+                                    ? 'bg-black/20 text-current' 
+                                    : 'bg-primary/10 border border-white/10 text-accent'}
+                            `} {...props}>
+                                {children}
+                            </code>
+                        );
+                    }
                 }
             } as any}
         >
@@ -323,34 +420,44 @@ const ThinkingBlock: React.FC<{ content: string; theme: Theme; language: Languag
     const [isOpen, setIsOpen] = useState(false);
     const t = TRANSLATIONS[language];
     const styles = THEME_STYLES[theme];
+    const isPixel = styles.type === 'pixel';
+    const borderColor = styles.borderColor || 'border-gray-300';
 
     return (
         <div className={`
-            my-3 ${styles.borderWidth} ${styles.borderColor} border-dashed border-opacity-30 ${styles.radius} overflow-hidden
-            ${styles.secondary} bg-opacity-30
+            my-2 overflow-hidden transition-all duration-300 ease-in-out
+            ${styles.radius}
+            ${isOpen ? 'bg-black/5 dark:bg-white/5' : 'bg-transparent'}
         `}>
-            <button 
+            <button
                 onClick={() => setIsOpen(!isOpen)}
                 className={`
-                    w-full flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-wide
-                    opacity-70 hover:opacity-100 transition-opacity select-none
+                    flex items-center gap-2 px-3 py-2 text-xs font-medium uppercase tracking-wider w-full text-left
+                    rounded-lg transition-colors my-1
+                    ${isOpen ? 'bg-white/10 text-purple-300' : 'text-gray-500 hover:bg-white/5'}
                 `}
             >
-                <Brain size={14} className="opacity-70" />
-                <span className="flex-1 text-left">{t.thinkingProcess}</span>
-                <span className="flex items-center gap-1 opacity-50">
-                    {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                <Brain size={12} className={isOpen ? "text-purple-400" : "opacity-50"} />
+                <span className="flex-1 opacity-80">
+                    {t.thinkingProcess}
                 </span>
-            </button>
-            
-            {isOpen && (
-                <div className={`
-                    p-3 text-xs border-t border-dashed ${styles.borderColor} border-opacity-30
-                    markdown-body break-words overflow-x-auto
-                `}>
-                   <MarkdownRenderer text={content} theme={theme} />
+                <div className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
+                    <ChevronDown size={12} />
                 </div>
-            )}
+            </button>
+
+            <div className={`
+                transition-all duration-300 ease-in-out overflow-hidden
+                ${isOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}
+            `}>
+                <div className={`
+                    px-4 pb-4 pt-0 text-sm opacity-80 border-l-2 ml-3.5
+                    ${borderColor} border-opacity-30
+                    font-mono leading-relaxed text-gray-500 dark:text-gray-400
+                `}>
+                    <MarkdownRenderer text={content} theme={theme} />
+                </div>
+            </div>
         </div>
     );
 });
@@ -543,90 +650,112 @@ interface MessageBubbleProps {
 const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ msg, theme, language, isStreaming, isLast }) => {
     const styles = THEME_STYLES[theme];
     const isModern = styles.type === 'modern';
-    
-    // Bubble shape logic
-    const bubbleShape = msg.role === 'user' 
-        ? (isModern ? 'rounded-2xl rounded-tr-sm' : '') 
+    const isPixel = styles.type === 'pixel';
+    const isAssistant = msg.role === 'assistant';
+
+    // Bubble shape and color logic - Assistant now has transparent background
+    const bubbleShape = msg.role === 'user'
+        ? (isModern ? 'rounded-2xl rounded-tr-sm' : '')
         : (isModern ? 'rounded-2xl rounded-tl-sm' : '');
 
     const bubbleColor = msg.role === 'user'
         ? `${styles.primary} ${styles.primaryText}`
-        : `${styles.secondary} ${styles.text}`;
+        : 'bg-transparent pl-0';
 
-    const hasThinking = useMemo(() => msg.content?.includes('<thinking>'), [msg.content]);
-    const hasTool = useMemo(() => msg.content?.includes('<tool_action'), [msg.content]);
-    const isHtml = useMemo(() => {
-        const trimmed = msg.content.trim();
-        return /^\s*<!DOCTYPE html>/i.test(trimmed) || /^\s*<html/i.test(trimmed);
-    }, [msg.content]);
+    // Width calculation
+    const isWide = msg.role !== 'user' && (msg.content?.includes('<thinking>') || msg.content?.includes('<tool_action') || /^\s*<!DOCTYPE html>/i.test(msg.content.trim()) || /^\s*<html/i.test(msg.content.trim()));
 
-    // Force standard width for user messages since they are plain text
-    // Only expand width for assistant messages that contain complex UI elements
-    const isWide = msg.role !== 'user' && (hasThinking || hasTool || isHtml);
+    const bubbleContainerClass = isAssistant
+        ? 'w-full pr-8'
+        : 'max-w-[85%] md:max-w-[70%] ml-auto';
 
     return (
-        <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-          <div 
-            className={`
-              p-4 ${styles.borderWidth} ${styles.borderColor} ${styles.shadow} ${styles.radius} ${bubbleShape}
-              ${isWide ? 'max-w-[95vw] md:max-w-[90%]' : 'max-w-[85vw] md:max-w-[65%]'}
-              ${bubbleColor}
-              overflow-hidden min-w-0 message-bubble
-            `}
-          >
-            <div className="flex justify-between items-center mb-2 gap-2 opacity-80">
-              <div className={`text-[10px] font-bold uppercase tracking-widest`}>
-                {msg.role}
-              </div>
-              {msg.role === 'assistant' && msg.content && (
-                 <CopyButton content={msg.content} />
-              )}
-            </div>
-            
-            {/* Display Images for User Messages */}
-            {msg.role === 'user' && msg.images && msg.images.length > 0 && (
-                <div className="flex flex-col gap-2 mb-2">
-                    {msg.images.map((img, idx) => (
-                        <div key={idx} className={`relative rounded overflow-hidden border-2 border-white/20 max-w-full`}>
-                            <img src={img.startsWith('data:') ? img : `data:image/png;base64,${img}`} alt="Uploaded" className="max-w-full h-auto max-h-[500px] object-contain" />
-                        </div>
-                    ))}
+        <div className={`flex gap-4 mb-6 ${isAssistant ? 'justify-start' : 'justify-end'} group animate-msg-in`}>
+            {/* Assistant Avatar (Left) */}
+            {isAssistant && (
+                <div className={`
+                    w-8 h-8 shrink-0 flex items-center justify-center rounded-sm overflow-hidden mt-1
+                    ${isPixel ? 'border-2 border-current' : 'rounded-full bg-gradient-to-tr from-blue-500 to-purple-500'}
+                `}>
+                    <div className="text-xs font-bold text-white">AI</div>
                 </div>
             )}
 
-            <div className={`leading-relaxed text-sm ${styles.font} break-words min-w-0`}>
-              {msg.role === 'user' ? (
-                  <div className="whitespace-pre-wrap break-words">{msg.content}</div>
-              ) : (
-                  msg.content ? (
-                      isHtml ? (
-                          <HtmlPreviewBlock code={msg.content} theme={theme} defaultPreview={true} />
-                      ) : (
-                          parseMessageContent(msg.content, theme, language, isStreaming && isLast)
-                      )
-                  ) : isStreaming && isLast ? (
-                      // Streaming skeleton placeholder to prevent layout shift
-                      <div className="space-y-2 py-1">
-                          <div className="flex gap-1 items-center animate-pulse">
-                              <div className="h-3 bg-gray-400/30 rounded w-3"></div>
-                              <div className="h-3 bg-gray-400/30 rounded w-20"></div>
-                          </div>
-                          <div className="h-3 bg-gray-400/20 rounded w-3/4"></div>
-                          <div className="h-3 bg-gray-400/20 rounded w-1/2"></div>
-                          <div className="h-3 bg-gray-400/10 rounded w-5/6"></div>
-                      </div>
-                  ) : (
-                      <div className="flex items-center gap-2 py-2 opacity-70">
-                          <Loader2 size={16} className="animate-spin" />
-                          <span className="animate-pulse">Thinking...</span>
-                      </div>
-                  )
-              )}
-              {isStreaming && isLast && msg.content && msg.role !== 'user' && (
-                  <span className="inline-block w-2 h-4 bg-current ml-1 animate-cursor align-middle"></span>
-              )}
+            <div className={bubbleContainerClass}>
+                <div
+                    className={`
+                        ${styles.radius} ${bubbleShape}
+                        ${isWide ? 'max-w-[95vw] md:max-w-[90%]' : 'max-w-[85vw] md:max-w-[65%]'}
+                        ${bubbleColor}
+                        overflow-hidden min-w-0 message-bubble
+                        ${isAssistant ? '' : `${styles.borderWidth} ${styles.borderColor} ${styles.shadow} p-4`}
+                    `}
+                >
+                    {/* Assistant header with name and actions */}
+                    {isAssistant && (
+                        <div className="flex items-center gap-2 mb-1 opacity-50 text-xs font-bold uppercase select-none">
+                            <span>Assistant</span>
+                            <div className="group-hover:opacity-100 opacity-0 transition-opacity flex gap-2">
+                                <CopyButton content={msg.content || ''} />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Display Images for User Messages */}
+                    {msg.role === 'user' && msg.images && msg.images.length > 0 && (
+                        <div className="flex flex-col gap-2 mb-2">
+                            {msg.images.map((img, idx) => (
+                                <div key={idx} className={`relative rounded overflow-hidden border-2 border-white/20 max-w-full`}>
+                                    <img src={img.startsWith('data:') ? img : `data:image/png;base64,${img}`} alt="Uploaded" className="max-w-full h-auto max-h-[500px] object-contain" />
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    <div className={`leading-relaxed text-sm ${styles.font} break-words min-w-0`}>
+                        {msg.role === 'user' ? (
+                            <div className="whitespace-pre-wrap break-words">{msg.content}</div>
+                        ) : (
+                            msg.content ? (
+                                /^\s*<!DOCTYPE html>/i.test(msg.content.trim()) || /^\s*<html/i.test(msg.content.trim()) ? (
+                                    <HtmlPreviewBlock code={msg.content} theme={theme} defaultPreview={true} />
+                                ) : (
+                                    parseMessageContent(msg.content, theme, language, isStreaming && isLast)
+                                )
+                            ) : isStreaming && isLast ? (
+                                // Streaming skeleton placeholder to prevent layout shift
+                                <div className="space-y-2 py-1">
+                                    <div className="flex gap-1 items-center animate-pulse">
+                                        <div className="h-3 bg-gray-400/30 rounded w-3"></div>
+                                        <div className="h-3 bg-gray-400/30 rounded w-20"></div>
+                                    </div>
+                                    <div className="h-3 bg-gray-400/20 rounded w-3/4"></div>
+                                    <div className="h-3 bg-gray-400/20 rounded w-1/2"></div>
+                                    <div className="h-3 bg-gray-400/10 rounded w-5/6"></div>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-2 py-2 opacity-70">
+                                    <Loader2 size={16} className="animate-spin" />
+                                    <span className="animate-pulse">Thinking...</span>
+                                </div>
+                            )
+                        )}
+                        {isStreaming && isLast && msg.content && (
+                            <span className="typing-cursor inline-block w-0.5 h-4 bg-current ml-1 align-middle"></span>
+                        )}
+                    </div>
+                </div>
             </div>
-          </div>
+
+            {/* User Avatar (Right) */}
+            {!isAssistant && (
+                <div className={`
+                    w-8 h-8 shrink-0 flex items-center justify-center mt-1
+                    ${isPixel ? 'border-2 border-current bg-white text-black' : 'rounded-full bg-gray-200 text-gray-600'}
+                `}>
+                    <div className="text-xs font-bold">ME</div>
+                </div>
+            )}
         </div>
     );
 });
@@ -639,8 +768,6 @@ export const Chat: React.FC<ChatProps> = ({
 }) => {
   const [input, setInput] = useState('');
   const [localIsStreaming, setLocalIsStreaming] = useState(false);
-  const [showThemeMenu, setShowThemeMenu] = useState(false);
-  const [showLangMenu, setShowLangMenu] = useState(false);
   
   // Image Upload State
   const [pendingImages, setPendingImages] = useState<string[]>([]);
@@ -648,30 +775,11 @@ export const Chat: React.FC<ChatProps> = ({
   
   const isStreaming = externalIsStreaming || localIsStreaming;
   const scrollRef = useRef<HTMLDivElement>(null);
-  const themeRef = useRef<HTMLDivElement>(null);
-  const langRef = useRef<HTMLDivElement>(null);
   const shouldAutoScrollRef = useRef(true); 
 
   const styles = THEME_STYLES[theme];
   const t = TRANSLATIONS[language];
   const isMultimodal = activeModel?.type === 'multimodal';
-
-  // ... (Effect hooks same as before) ...
-  useEffect(() => {
-      const handleClickOutside = (event: MouseEvent) => {
-          if (showThemeMenu && themeRef.current && !themeRef.current.contains(event.target as Node)) {
-              setShowThemeMenu(false);
-          }
-          if (showLangMenu && langRef.current && !langRef.current.contains(event.target as Node)) {
-              setShowLangMenu(false);
-          }
-      };
-
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => {
-          document.removeEventListener('mousedown', handleClickOutside);
-      };
-  }, [showThemeMenu, showLangMenu]);
 
   const displayMessages = useMemo(() => {
     if (!searchQuery.trim()) return messages;
@@ -779,42 +887,26 @@ export const Chat: React.FC<ChatProps> = ({
   const isDisabled = (!activeModel) && input.trim() !== '/upup downdown left right';
   const isButtonDisabled = isDisabled && pendingImages.length === 0 && !isStreaming;
 
-  const ThemeOption = ({ targetTheme, icon, label }: { targetTheme: Theme, icon: React.ReactNode, label: string }) => (
-      <button 
-        onClick={() => { setTheme(targetTheme); setShowThemeMenu(false); }}
-        className={`
-            flex items-center gap-2 w-full text-left p-2 hover:bg-black/10 text-sm font-bold
-            ${theme === targetTheme ? `bg-black/5 ${styles.sidebarBorder}` : ''}
-        `}
-      >
-         {icon} {label}
-      </button>
-  );
-
-  const LangOption = ({ targetLang, label }: { targetLang: Language, label: string }) => (
-      <button 
-        onClick={() => { setLanguage(targetLang); setShowLangMenu(false); }}
-        className={`
-            flex items-center gap-2 w-full text-left p-2 hover:bg-black/10 text-sm font-bold
-            ${language === targetLang ? `bg-black/5 ${styles.sidebarBorder}` : ''}
-        `}
-      >
-         <span className="w-4 text-center">{targetLang.toUpperCase()}</span> {label}
-      </button>
-  );
-
   return (
     <div className={`flex flex-col h-full relative z-10 ${styles.font}`}>
       
       <div 
-        className="flex-1 overflow-y-auto overflow-x-auto p-3 sm:p-4 space-y-4 sm:space-y-6 relative z-10" 
+        className="flex-1 overflow-y-auto overflow-x-auto p-3 sm:p-4 space-y-4 sm:space-y-6 relative z-10 pb-32" 
         ref={scrollRef}
         onScroll={handleScroll}
       >
-        {messages.length === 0 ? (
-           <div className={`flex flex-col items-center justify-center h-full opacity-50 select-none ${styles.text}`}>
-              <div className="text-6xl mb-4 animate-bounce">🎮</div>
-              <div className="text-xl">{t.selectModelStart}</div>
+                 {messages.length === 0 ? (
+           <div className={`flex flex-col items-center justify-center h-full select-none ${styles.text}`}>
+              <div className="text-6xl mb-6 p-4 rounded-3xl bg-gradient-to-tr from-blue-500/20 to-purple-500/20 animate-msg-in">
+                🎮
+              </div>
+              <h2 className="text-2xl font-bold mb-2 animate-msg-in" style={{ animationDelay: '0.1s' }}>
+                有什么可以帮你的吗？
+              </h2>
+              <SuggestionGrid 
+                onSelect={(text: string) => setInput(text)} 
+                theme={theme} 
+              />
            </div>
         ) : displayMessages.length === 0 ? (
            <div className={`flex flex-col items-center justify-center h-full opacity-50 select-none ${styles.text}`}>
@@ -835,17 +927,22 @@ export const Chat: React.FC<ChatProps> = ({
         )}
       </div>
 
-      <div className={`p-4 ${styles.headerBorder} ${styles.secondary} relative z-[70]`}>
-        <div className="relative">
+      <div className={`fixed bottom-0 left-0 right-0 p-4 z-50 pointer-events-none flex justify-center`}>
+        <div className={`
+            w-full max-w-4xl pointer-events-auto 
+            mb-0 sm:mb-6 rounded-2xl p-2 transition-all duration-300
+            ${styles.type === 'modern' ? 'shadow-2xl' : 'shadow-[8px_8px_0px_rgba(0,0,0,0.5)]'}
+            ${styles.inputBg} 
+        `}>
           {/* Pending Images Preview */}
           {pendingImages.length > 0 && (
-              <div className="flex gap-2 mb-2 overflow-x-auto pb-2">
+              <div className="flex gap-2 mb-2 overflow-x-auto pb-2 px-1">
                   {pendingImages.map((img, idx) => (
                       <div key={idx} className={`relative shrink-0 w-16 h-16 ${styles.borderWidth} ${styles.borderColor} ${styles.radius} overflow-hidden group`}>
                           <img src={img} className="w-full h-full object-cover" alt="Preview" />
                           <button 
                               onClick={() => removePendingImage(idx)}
-                              className="absolute top-0 right-0 bg-red-500 text-white p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                              className={`absolute top-0 right-0 bg-red-500 text-white p-0.5 opacity-0 group-hover:opacity-100 transition-opacity ${styles.radius}`}
                           >
                               <X size={12} />
                           </button>
@@ -854,124 +951,71 @@ export const Chat: React.FC<ChatProps> = ({
               </div>
           )}
 
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onPaste={handlePaste}
-            placeholder={activeModel ? `Message ${activeModel.name}... ${isMultimodal ? '(Paste images supported)' : ''}` : "Select a model from the sidebar to start..."}
-            disabled={isDisabled && !input.startsWith('/')}
-            className={`
-              w-full p-3 pr-12 min-h-[60px] max-h-[200px] resize-none outline-none
-              ${styles.borderWidth} ${styles.borderColor} ${styles.radius}
-              ${isDisabled ? 'bg-gray-200 cursor-not-allowed text-gray-500' : `${styles.inputBg} ${styles.text} focus:shadow-lg`}
-              placeholder-current placeholder-opacity-50
-              transition-all
-              relative z-50
-            `}
-          />
-          
-          <div className="flex justify-between mt-2 items-center relative z-50">
-             <div className="flex gap-2 items-center">
-                {/* Upload Button */}
-                {isMultimodal && (
-                    <>
-                        <input 
-                            type="file" 
-                            ref={fileInputRef} 
-                            onChange={handleFileSelect} 
-                            accept="image/*" 
-                            multiple 
-                            className="hidden" 
-                        />
-                        <PixelButton
-                            theme={theme}
-                            variant="secondary"
-                            className="w-9 h-9 !p-0 flex items-center justify-center"
-                            title={t.uploadImage}
-                            onClick={() => fileInputRef.current?.click()}
-                        >
-                            <Paperclip size={20} />
-                        </PixelButton>
-                    </>
-                )}
+          {/* Input Container: Floating Card Effect */}
+          <div className={`
+            relative rounded-3xl overflow-hidden transition-shadow duration-200
+            ${styles.type === 'modern' ? 'shadow-lg border border-white/10 focus-within:ring-1 focus-within:ring-white/20' : styles.borderWidth + ' ' + styles.borderColor}
+          `}>
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onPaste={handlePaste}
+              placeholder={activeModel ? `Message ${activeModel.name}... ${isMultimodal ? '(Paste images supported)' : ''}` : "Select a model from the sidebar to start..."}
+              disabled={isDisabled && !input.startsWith('/')}
+              className={`
+                w-full p-4 pr-14 min-h-[56px] max-h-[200px] resize-none outline-none
+                bg-transparent ${styles.text} placeholder-opacity-40
+              `}
+              style={{ height: 'auto', minHeight: '56px' }}
+            />
+            
+            {/* Action Buttons */}
+            <div className="absolute bottom-2 right-2 flex gap-2">
+              {/* Upload Button */}
+              {isMultimodal && (
+                  <>
+                      <input 
+                          type="file" 
+                          ref={fileInputRef} 
+                          onChange={handleFileSelect} 
+                          accept="image/*" 
+                          multiple 
+                          className="hidden" 
+                      />
+                      <button 
+                          onClick={() => fileInputRef.current?.click()}
+                          className={`p-2 rounded-full hover:bg-black/5 transition-colors ${styles.textMuted}`}
+                          title={t.uploadImage}
+                      >
+                          <Paperclip size={18} />
+                      </button>
+                  </>
+              )}
 
-                <div className="relative" ref={themeRef}>
-                    {showThemeMenu && (
-                        <div className={`
-                            absolute bottom-full left-0 mb-2 w-48 
-                            ${styles.borderWidth} ${styles.borderColor} ${styles.radius}
-                            ${styles.secondary} ${styles.text} ${styles.shadow}
-                            flex flex-col z-[70] overflow-hidden
-                        `}>
-                             <ThemeOption targetTheme={Theme.LIGHT} icon={<Sun size={14}/>} label={t.themeDay} />
-                               <ThemeOption targetTheme={Theme.DARK} icon={<Moon size={14}/>} label={t.themeNight} />
-                               <ThemeOption targetTheme={Theme.SHADCN_LIGHT} icon={<Square size={14}/>} label={t.themeShadcnDay} />
-                               <ThemeOption targetTheme={Theme.SHADCN_DARK} icon={<Circle size={14}/>} label={t.themeShadcnNight} />
-                               <ThemeOption targetTheme={Theme.CYBER} icon={<Zap size={14}/>} label={t.themeCyber} />
-                               <ThemeOption targetTheme={Theme.SUNSET} icon={<Sunset size={14}/>} label={t.themeSunset} />
-                          </div>
-                    )}
-                    <PixelButton 
-                        theme={theme} 
-                        variant="secondary" 
-                        className="w-9 h-9 !p-0 flex items-center justify-center" 
-                        title={t.changeTheme}
-                        onClick={() => {
-                            if (!showThemeMenu) setShowLangMenu(false);
-                            setShowThemeMenu(!showThemeMenu);
-                        }}
-                    >
-                        <Palette size={20} />
-                    </PixelButton>
-                </div>
-
-                <div className="relative" ref={langRef}>
-                    {showLangMenu && (
-                        <div className={`
-                            absolute bottom-full left-0 mb-2 w-32 
-                            ${styles.borderWidth} ${styles.borderColor} ${styles.radius}
-                            ${styles.secondary} ${styles.text} ${styles.shadow}
-                            flex flex-col z-[70] overflow-hidden
-                        `}>
-                             <LangOption targetLang="en" label="English" />
-                             <LangOption targetLang="zh" label="中文" />
-                             <LangOption targetLang="ja" label="日本語" />
-                        </div>
-                    )}
-                    <PixelButton 
-                        theme={theme} 
-                        variant="secondary" 
-                        className="w-9 h-9 !p-0 flex items-center justify-center" 
-                        title={t.changeLanguage}
-                        onClick={() => {
-                             if (!showLangMenu) setShowThemeMenu(false);
-                             setShowLangMenu(!showLangMenu);
-                        }}
-                    >
-                        <Globe size={20} />
-                    </PixelButton>
-                </div>
-             </div>
-             
-              <div className="flex gap-2">
-                 {isStreaming && (
-                   <div className={`flex items-center mr-4 ${styles.text}`}>
-                     <span className="animate-spin mr-2">★</span> {t.generating}
-                   </div>
-                )}
-                
-                <PixelButton 
-                    theme={theme} 
-                    onClick={isStreaming ? onStop : handleSend} 
-                    disabled={isButtonDisabled}
-                    className="w-32 h-9"
-                    variant={isStreaming ? 'danger' : 'primary'}
-                >
-                    {isStreaming ? t.stop : t.send} <Send size={16} />
-                </PixelButton>
-             </div>
+              <button 
+                  onClick={isStreaming ? onStop : handleSend} 
+                  disabled={isButtonDisabled}
+                  className={`
+                    p-2 rounded-full transition-all duration-200
+                    ${isButtonDisabled ? 'opacity-30 cursor-not-allowed bg-gray-500' : 'opacity-100 hover:scale-105'}
+                    ${isStreaming ? 'bg-red-500 text-white' : (styles.type === 'modern' ? 'bg-white text-black' : styles.primary + ' ' + styles.primaryText)}
+                  `}
+              >
+                  {isStreaming ? <Square size={16} fill="currentColor" /> : <Send size={18} />}
+              </button>
+            </div>
           </div>
+          
+          <div className="flex justify-end items-center mt-2">
+            {/* Streaming Indicator */}
+            {isStreaming && (
+              <div className={`flex items-center ${styles.text}`}>
+                <span className="animate-spin mr-2">★</span> {t.generating}
+              </div>
+            )}
+          </div>
+          
         </div>
       </div>
     </div>

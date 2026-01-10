@@ -121,95 +121,95 @@ export const THEME_STYLES = {
     card: 'border-4 border-[#1A1938] bg-[#1A1938] pixel-shadow',
     button: 'border-2 border-[#1A1938] pixel-shadow active:translate-x-[2px] active:translate-y-[2px] active:shadow-none uppercase tracking-widest font-bold'
   },
-  // PIXEL LIGHT: Warm cream palette with refined colors
+  // PIXEL LIGHT: Warm cream palette with refined colors (羊皮纸)
   [Theme.LIGHT]: {
     type: 'pixel',
-    bg: 'bg-[#FFF8F0]',
-    text: 'text-[#2D1B2E]',
-    textMuted: 'text-[#2D1B2E]/50',
-    primary: 'bg-[#E06C9C] hover:bg-[#E88BB0]',
+    bg: 'bg-[#FFF8E7]',
+    text: 'text-[#4A3B32]',
+    textMuted: 'text-[#8C7B70]',
+    primary: 'bg-[#E95420] hover:bg-[#F06535]',
     primaryText: 'text-white',
-    secondary: 'bg-[#F5EFE6]',
-    secondaryText: 'text-[#2D1B2E]',
-    accent: 'text-[#9D4EDD]',
+    secondary: 'bg-[#F4E4BC]',
+    secondaryText: 'text-[#4A3B32]',
+    accent: 'text-[#2D1B2E]',
     success: 'text-[#22C55E]',
     warning: 'text-[#EAB308]',
     error: 'text-[#EF4444]',
-    border: 'border-2 border-[#2D1B2E]',
+    border: 'border-2 border-[#4A3B32]',
     
     // Structural
     font: 'font-pixel-verse',
     radius: 'rounded-none',
     borderWidth: 'border-2',
-    borderColor: 'border-[#2D1B2E]',
-    shadow: 'shadow-[4px_4px_0px_0px_#2D1B2E]',
+    borderColor: 'border-[#4A3B32]',
+    shadow: 'shadow-[4px_4px_0px_rgba(74,59,50,0.2)]',
     inputBg: 'bg-[#FFFFFF]',
     
     // Layout specifics
-    sidebarBorder: 'border-r-4 border-[#2D1B2E]',
-    headerBorder: 'border-b-4 border-[#2D1B2E]',
-    card: 'border-4 border-[#2D1B2E] bg-[#F5EFE6] shadow-[4px_4px_0px_0px_#2D1B2E]',
-    button: 'border-2 border-[#2D1B2E] shadow-[4px_4px_0px_0px_#2D1B2E] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none uppercase tracking-widest font-bold'
+    sidebarBorder: 'border-r-4 border-[#4A3B32]',
+    headerBorder: 'border-b-4 border-[#4A3B32]',
+    card: 'bg-[#F4E4BC] border-2 border-[#4A3B32] shadow-[4px_4px_0px_rgba(74,59,50,0.2)]',
+    button: 'uppercase tracking-widest font-bold border-2 border-[#4A3B32] shadow-[2px_2px_0px_#4A3B32] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none'
   },
-  // SHADCN DARK: Clean minimal with subtle gradient and accent
+  // SHADCN DARK: Clean minimal with subtle gradient and accent (高级灰)
   [Theme.SHADCN_DARK]: {
     type: 'modern',
-    bg: 'bg-[#09090b] bg-gradient-to-b from-[#1A1A24] to-[#09090b]',
-    text: 'text-[#FAFAFA]',
-    textMuted: 'text-[#A1A1AA]',
-    primary: 'bg-[#FAFAFA] hover:bg-[#E4E4E7] text-[#09090B]',
-    primaryText: 'text-[#09090B]',
-    secondary: 'bg-[#18181B] hover:bg-[#27272A]',
-    secondaryText: 'text-[#FAFAFA]',
-    accent: 'text-[#A78BFA]',
+    bg: 'bg-zinc-950',
+    text: 'text-zinc-200',
+    textMuted: 'text-zinc-500',
+    primary: 'bg-zinc-100 text-zinc-950 hover:bg-white shadow-lg shadow-zinc-500/20',
+    primaryText: 'text-zinc-950',
+    secondary: 'bg-zinc-900/50 backdrop-blur-md',
+    secondaryText: 'text-zinc-400',
+    accent: 'text-indigo-400',
     success: 'text-[#4ADE80]',
     warning: 'text-[#FBBF24]',
     error: 'text-[#F87171]',
-    border: 'border-[#27272A]',
-    
-    // Structural
-    font: 'font-sans',
-    radius: 'rounded-lg',
-    borderWidth: 'border',
-    borderColor: 'border-[#27272A]',
-    shadow: 'shadow-lg',
-    inputBg: 'bg-[#18181B]',
-    
-    // Layout specifics
-    sidebarBorder: 'border-r border-[#27272A]',
-    headerBorder: 'border-b border-[#27272A]',
-    card: 'bg-[#09090b]/80 backdrop-blur-sm border border-[#27272A]',
-    button: 'rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA] focus-visible:ring-offset-2 focus-visible:ring-offset-[#09090b]'
-  },
-  // SHADCN LIGHT: Clean minimal with warmth
-  [Theme.SHADCN_LIGHT]: {
-    type: 'modern',
-    bg: 'bg-[#FAFAFA]',
-    text: 'text-[#18181B]',
-    textMuted: 'text-[#71717A]',
-    primary: 'bg-[#18181B] hover:bg-[#27272A] text-white',
-    primaryText: 'text-white',
-    secondary: 'bg-[#F4F4F5] hover:bg-[#E4E4E7]',
-    secondaryText: 'text-[#18181B]',
-    accent: 'text-[#7C3AED]',
-    success: 'text-[#22C55E]',
-    warning: 'text-[#EAB308]',
-    error: 'text-[#EF4444]',
-    border: 'border-[#E4E4E7]',
+    border: 'border-white/10',
     
     // Structural
     font: 'font-sans',
     radius: 'rounded-xl',
     borderWidth: 'border',
-    borderColor: 'border-[#E4E4E7]',
-    shadow: 'shadow-lg',
-    inputBg: 'bg-[#FFFFFF]',
+    borderColor: 'border-white/10',
+    shadow: 'shadow-xl',
+    inputBg: 'bg-zinc-900/80 backdrop-blur-xl ring-1 ring-white/10',
     
     // Layout specifics
-    sidebarBorder: 'border-r border-[#E4E4E7]',
-    headerBorder: 'border-b border-[#E4E4E7]',
-    card: 'bg-white border border-[#E4E4E7]',
-    button: 'rounded-xl font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7C3AED] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FAFAFA]'
+    sidebarBorder: 'border-r border-white/5',
+    headerBorder: 'border-b border-white/5',
+    card: 'bg-zinc-900 border border-white/10',
+    button: 'rounded-lg font-medium transition-all active:scale-95'
+  },
+  // SHADCN LIGHT: Clean minimal with warmth (陶瓷质感)
+  [Theme.SHADCN_LIGHT]: {
+    type: 'modern',
+    bg: 'bg-[#FAFAFA]',
+    text: 'text-zinc-800',
+    textMuted: 'text-zinc-400',
+    primary: 'bg-zinc-900 text-white hover:bg-black shadow-lg shadow-zinc-300',
+    primaryText: 'text-white',
+    secondary: 'bg-white/80 backdrop-blur-md',
+    secondaryText: 'text-zinc-600',
+    accent: 'text-violet-600',
+    success: 'text-[#16A34A]',
+    warning: 'text-[#CA8A04]',
+    error: 'text-[#DC2626]',
+    border: 'border-zinc-200',
+    
+    // Structural
+    font: 'font-sans',
+    radius: 'rounded-xl',
+    borderWidth: 'border',
+    borderColor: 'border-zinc-200',
+    shadow: 'shadow-sm',
+    inputBg: 'bg-white ring-1 ring-zinc-200 shadow-xl shadow-black/5',
+    
+    // Layout specifics
+    sidebarBorder: 'border-r border-zinc-200/50',
+    headerBorder: 'border-b border-transparent',
+    card: 'bg-white border border-zinc-100 shadow-sm',
+    button: 'rounded-lg font-medium transition-all'
   },
   // CYBER NEON: Cyberpunk aesthetics with glowing neon accents
   [Theme.CYBER]: {

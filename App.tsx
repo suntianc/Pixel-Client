@@ -8,6 +8,7 @@ import { ToastProvider, useToast } from './components/Toast';
 import { Settings, Search, ChevronLeft, ChevronRight, Trash2, RefreshCcw, AlertCircle } from 'lucide-react';
 import { ApiClient } from './services/apiClient';
 import { streamChatResponse } from './services/llmService';
+import { SettingsDropdown } from './components/SettingsDropdown';
 
 const ModelManager = lazy(() => import('./components/ModelManager').then(module => ({ default: module.ModelManager })));
 
@@ -195,9 +196,39 @@ const AppContent: React.FC = () => {
     setSidebarOpen(prev => !prev);
   }, []);
 
+  const toggleTheme = useCallback(() => {
+    setTheme(prev => prev === Theme.LIGHT ? Theme.DARK : Theme.LIGHT);
+  }, []);
+
+  const toggleLanguage = useCallback(() => {
+    setLanguage(prev => prev === 'zh' ? 'en' : 'zh');
+  }, []);
+
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
   }, []);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + K: Focus search
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        document.getElementById('search-input')?.focus();
+      }
+      // Ctrl/Cmd + M: Cycle through themes
+      if ((e.ctrlKey || e.metaKey) && e.key === 'm') {
+        e.preventDefault();
+        const themes = [Theme.DARK, Theme.LIGHT, Theme.SHADCN_DARK, Theme.SHADCN_LIGHT, Theme.CYBER, Theme.SUNSET];
+        const currentIdx = themes.indexOf(theme);
+        const nextIdx = (currentIdx + 1) % themes.length;
+        setTheme(themes[nextIdx]);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [theme, setTheme]);
 
   const handleCloseDeleteDialog = useCallback(() => {
     setShowDeleteDialog(false);
@@ -378,7 +409,7 @@ const AppContent: React.FC = () => {
       </div>
 
       <div className="flex-1 flex flex-col relative z-10 h-full min-w-0">
-        <div className={`h-14 min-h-[56px] ${styles.headerBorder} flex items-center px-4 justify-between ${styles.secondary}`}>
+        <div className={`h-14 min-h-[56px] ${styles.headerBorder} flex items-center px-4 justify-between ${styles.secondary} backdrop-blur-md sticky top-0 z-50`}>
           <div className="flex items-center gap-4">
             <PixelButton
               theme={theme}
@@ -407,6 +438,7 @@ const AppContent: React.FC = () => {
             )}
             <div className="relative hidden md:block">
               <input
+                id="search-input"
                 type="text"
                 placeholder={t.searchPlaceholder}
                 value={searchQuery}
@@ -419,6 +451,14 @@ const AppContent: React.FC = () => {
               />
               <Search className={`absolute left-2 top-1.5 w-4 h-4 opacity-50 ${styles.text}`} />
             </div>
+
+            <SettingsDropdown
+              theme={theme}
+              language={language}
+              onThemeChange={setTheme}
+              onLanguageChange={setLanguage}
+              isBackendOffline={isBackendOffline}
+            />
           </div>
         </div>
 
